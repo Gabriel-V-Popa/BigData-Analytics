@@ -17,6 +17,7 @@ from src._1_baseline.parser import parse_subelements
 
 # --- Imports from PHASE 2 ---
 from src._2_engine.repair import run_repair
+from src._2_engine.infect import run_infect
 
 # --- Imports from PHASE 3 ---
 from src._3_scenarios.a_global_frequency import filter_all_anomalies, filter_top_k_frequent, filter_bottom_k_frequent
@@ -150,8 +151,7 @@ def main():
     if args.strategy == "repair":
         altered_log, modified_traces = run_repair(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
     elif args.strategy == "infect":
-        print("[INFO] Strategy 'infect' not implemented yet.")
-        sys.exit(0)
+        altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
         
     # -----------------------
     # --- PHASE 4: Saving ---
