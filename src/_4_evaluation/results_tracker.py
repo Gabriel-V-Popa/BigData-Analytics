@@ -7,7 +7,8 @@ def update_results_matrix(matrix_path: Path,
                           strategy: str, 
                           scenario: str, 
                           modified_traces: int, 
-                          metrics: Dict[str, float]) -> pd.DataFrame:
+                          metrics: Dict[str, float],
+                          parameters: str = "N/A") -> pd.DataFrame:
     """
     Updates the central CSV matrix with the results of the latest experiment.
     If the file or its parent directories don't exist, it creates them.
@@ -19,6 +20,7 @@ def update_results_matrix(matrix_path: Path,
         'Dataset': dataset,
         'Strategy': strategy.upper(),
         'Scenario': scenario,
+        'Parameters': parameters,
         'Modified_Traces': modified_traces,
         'Fitness': round(metrics['fitness'], 4),
         'Precision': round(metrics['precision'], 4),
@@ -32,8 +34,13 @@ def update_results_matrix(matrix_path: Path,
     else:
         df = pd.DataFrame(columns=new_row.keys())
         
-    # Check if this exact experiment already exists (to overwrite it instead of duplicating)
-    condition = (df['Dataset'] == dataset) & (df['Strategy'] == strategy.upper()) & (df['Scenario'] == scenario)
+    # FIX: Included 'Parameters' in the condition to support Grid Search permutations
+    condition = (
+        (df['Dataset'] == dataset) & 
+        (df['Strategy'] == strategy.upper()) & 
+        (df['Scenario'] == scenario) &
+        (df['Parameters'] == parameters)
+    )
     
     if condition.any():
         print("[INFO] Overwriting existing experiment results in the matrix.")

@@ -1,24 +1,9 @@
 import pm4py
-from pm4py.objects.log.obj import EventLog, Trace, Event
+from pm4py.objects.log.obj import EventLog, Event
 from typing import List, Dict, Any
 import networkx as nx
 from datetime import timedelta
-
-def _get_label_sequence(graph: nx.DiGraph) -> List[str]:
-    """Extracts the ordered sequence of labels from a Directed Graph."""
-    try:
-        sorted_nodes = list(nx.topological_sort(graph))
-    except nx.NetworkXUnfeasible:
-        sorted_nodes = sorted(graph.nodes())
-    return [graph.nodes[n].get('label', '') for n in sorted_nodes]
-
-def _find_subsequence(sequence: List[str], subseq: List[str]) -> int:
-    """Finds the starting index of a contiguous subsequence in a sequence. Returns -1 if not found."""
-    n, m = len(sequence), len(subseq)
-    for i in range(n - m + 1):
-        if sequence[i:i+m] == subseq:
-            return i
-    return -1
+from src._2_engine.shared import get_label_sequence, find_subsequence
 
 def run_repair(log: EventLog, 
                anomalous_graphs: Dict[str, nx.DiGraph], 
@@ -39,8 +24,8 @@ def run_repair(log: EventLog,
             continue
             
         corr_id = features_dict[anom_id]['matched_with']
-        seq_anom = _get_label_sequence(anomalous_graphs[anom_id])
-        seq_corr = _get_label_sequence(correct_subgraphs[corr_id])
+        seq_anom = get_label_sequence(anomalous_graphs[anom_id])
+        seq_corr = get_label_sequence(correct_subgraphs[corr_id])
         
         repair_mapping[anom_id] = {
             'anom_seq': seq_anom,
@@ -66,7 +51,7 @@ def run_repair(log: EventLog,
             
             while True:
                 # Find where the anomaly starts in the REMAINING part of the trace
-                rel_idx = _find_subsequence(trace_labels[search_offset:], anom_seq)
+                rel_idx = find_subsequence(trace_labels[search_offset:], anom_seq)
                 
                 if rel_idx == -1:
                     break # Not found, exit the while loop
