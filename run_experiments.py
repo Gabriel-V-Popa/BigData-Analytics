@@ -98,7 +98,7 @@ def main():
     
         # Execute main.py, injecting the temporary config and all scenarios
         cmd = [
-            "python", "main.py",
+            sys.executable, "main.py",
             "--dataset", args.dataset,
             "--strategy", args.strategy,
             "--config", str(temp_config_path),
