@@ -49,3 +49,4 @@ fineExp,INFECT,A2_top,top_5,3363,0.9233,0.7254,0.9319,0.6279
 fineExp,INFECT,A2_bottom,bottom_5,144,0.9274,0.7513,0.9512,0.6279
 fineExp,INFECT,B1_exact,exact_ged_2,3375,0.9235,0.7254,0.9357,0.6279
 fineExp,INFECT,B1_extreme_min,min_extreme_3,492,0.927,0.7513,0.9516,0.6279
+fineExp,INFECT,B1_extreme_max,max_extreme_6,3378,0.924,0.7254,0.9337,0.6279
