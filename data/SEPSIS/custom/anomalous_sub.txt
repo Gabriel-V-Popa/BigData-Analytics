@@ -1,0 +1,860 @@
+S
+v 1 CRP
+v 2 LacticAcid
+v 3 Leucocytes
+d 1 2 CRP__LacticAcid
+d 2 3 LacticAcid__Leucocytes
+ 
+
+S
+v 1 Leucocytes
+v 2 CRP
+v 3 AdmissionNC
+ e 1 2 Leucocytes__CRP
+ e 3 1 AdmissionNC__Leucocytes
+
+
+S
+v 1 IVLiquid
+v 2 IVAntibiotics
+d 1 2 IVLiquid__IVAntibiotics
+ 
+
+S
+v 1 IVAntibiotics
+v 2 AdmissionNC
+d 1 2 IVAntibiotics__AdmissionNC
+ 
+
+S
+v 1 ERTriage
+v 2 ERSepsisTriage
+d 1 2 ERTriage__ERSepsisTriage
+ 
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 Leucocytes
+v 4 CRP
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__Leucocytes
+ e 3 4 Leucocytes__CRP
+
+
+S
+v 1 IVAntibiotics
+v 2 IVLiquid
+d 1 2 IVAntibiotics__IVLiquid
+ 
+
+S
+v 1 ReleaseA
+v 2 END
+v 3 AdmissionNC
+ e 1 2 ReleaseA__END
+ e 3 1 AdmissionNC__ReleaseA
+
+
+S
+v 1 ReleaseA
+v 2 END
+v 3 CRP
+ e 1 2 ReleaseA__END
+ e 3 1 CRP__ReleaseA
+
+
+S
+v 1 Leucocytes
+v 2 CRP
+v 3 LacticAcid
+v 4 LacticAcid
+ e 1 2 Leucocytes__CRP
+ e 2 3 CRP__LacticAcid
+ e 4 1 LacticAcid__Leucocytes
+
+
+S
+v 1 IVAntibiotics
+v 2 END
+d 1 2 IVAntibiotics__END
+ 
+
+S
+v 1 ReleaseA
+v 2 END
+v 3 Leucocytes
+ e 1 2 ReleaseA__END
+ e 3 1 Leucocytes__ReleaseA
+
+
+S
+v 1 Leucocytes
+v 2 LacticAcid
+d 1 2 Leucocytes__LacticAcid
+ 
+
+S
+v 1 ReleaseA
+v 2 ReturnER
+v 3 END
+v 4 CRP
+ e 1 2 ReleaseA__ReturnER
+ e 2 3 ReturnER__END
+ e 4 1 CRP__ReleaseA
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 LacticAcid
+v 4 ERTriage
+v 5 START
+v 6 ERRegistration
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__LacticAcid
+ e 4 1 ERTriage__CRP
+ e 5 6 START__ERRegistration
+ e 6 4 ERRegistration__ERTriage
+
+
+S
+v 1 Leucocytes
+v 2 AdmissionNC
+d 1 2 Leucocytes__AdmissionNC
+ 
+
+S
+v 1 AdmissionNC
+v 2 CRP
+v 3 Leucocytes
+v 4 CRP
+v 5 ReleaseA
+v 6 END
+ e 2 3 CRP__Leucocytes
+ e 1 2 AdmissionNC__CRP
+ e 3 4 Leucocytes__CRP
+ e 4 5 CRP__ReleaseA
+ e 5 6 ReleaseA__END
+
+
+S
+v 1 ReleaseA
+v 2 END
+v 3 CRP
+v 4 Leucocytes
+ e 1 2 ReleaseA__END
+ e 3 1 CRP__ReleaseA
+ e 4 3 Leucocytes__CRP
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 Leucocytes
+v 6 CRP
+v 7 LacticAcid
+v 8 IVLiquid
+v 9 IVAntibiotics
+v 10 END
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 4 5 ERSepsisTriage__Leucocytes
+ e 3 4 ERTriage__ERSepsisTriage
+ e 5 6 Leucocytes__CRP
+ e 6 7 CRP__LacticAcid
+ e 7 8 LacticAcid__IVLiquid
+ e 9 10 IVAntibiotics__END
+ e 8 9 IVLiquid__IVAntibiotics
+
+
+S
+v 1 AdmissionNC
+v 2 ReleaseA
+v 3 END
+v 4 AdmissionNC
+ e 2 3 ReleaseA__END
+ e 1 2 AdmissionNC__ReleaseA
+ e 4 1 AdmissionNC__AdmissionNC
+
+
+S
+v 1 Leucocytes
+v 2 CRP
+v 3 Leucocytes
+v 4 CRP
+v 5 Leucocytes
+ e 2 3 CRP__Leucocytes
+ e 3 4 Leucocytes__CRP
+ e 1 2 Leucocytes__CRP
+ e 5 1 Leucocytes__Leucocytes
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 LacticAcid
+v 4 LacticAcid
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__LacticAcid
+ e 4 1 LacticAcid__CRP
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 CRP
+v 4 Leucocytes
+v 5 Leucocytes
+v 6 CRP
+v 7 Leucocytes
+v 8 CRP
+ e 2 3 Leucocytes__CRP
+ e 3 4 CRP__Leucocytes
+ e 1 2 CRP__Leucocytes
+ e 4 5 Leucocytes__Leucocytes
+ e 6 7 CRP__Leucocytes
+ e 7 8 Leucocytes__CRP
+ e 5 6 Leucocytes__CRP
+
+
+S
+v 1 IVAntibiotics
+v 2 AdmissionNC
+v 3 CRP
+ e 1 2 IVAntibiotics__AdmissionNC
+ e 2 3 AdmissionNC__CRP
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 Leucocytes
+v 6 CRP
+v 7 LacticAcid
+v 8 IVLiquid
+v 9 IVAntibiotics
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 4 5 ERSepsisTriage__Leucocytes
+ e 3 4 ERTriage__ERSepsisTriage
+ e 5 6 Leucocytes__CRP
+ e 6 7 CRP__LacticAcid
+ e 7 8 LacticAcid__IVLiquid
+ e 8 9 IVLiquid__IVAntibiotics
+
+
+S
+v 1 ERRegistration
+v 2 ERTriage
+d 1 2 ERRegistration__ERTriage
+ 
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 Leucocytes
+v 5 CRP
+v 6 ERSepsisTriage
+v 7 END
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 5 6 CRP__ERSepsisTriage
+ e 3 4 ERTriage__Leucocytes
+ e 4 5 Leucocytes__CRP
+ e 6 7 ERSepsisTriage__END
+
+
+S
+v 1 IVLiquid
+v 2 IVAntibiotics
+v 3 AdmissionNC
+v 4 Leucocytes
+v 5 CRP
+ e 1 2 IVLiquid__IVAntibiotics
+ e 2 3 IVAntibiotics__AdmissionNC
+ e 3 4 AdmissionNC__Leucocytes
+ e 4 5 Leucocytes__CRP
+
+
+S
+v 1 LacticAcid
+v 2 CRP
+v 3 Leucocytes
+v 4 LacticAcid
+v 5 Leucocytes
+v 6 CRP
+v 7 Leucocytes
+v 8 CRP
+v 9 LacticAcid
+ e 4 5 LacticAcid__Leucocytes
+ e 5 6 Leucocytes__CRP
+ e 3 4 Leucocytes__LacticAcid
+ e 2 3 CRP__Leucocytes
+ e 1 2 LacticAcid__CRP
+ e 6 7 CRP__Leucocytes
+ e 7 8 Leucocytes__CRP
+ e 8 9 CRP__LacticAcid
+
+
+S
+v 1 Leucocytes
+v 2 CRP
+v 3 LacticAcid
+v 4 Leucocytes
+v 5 CRP
+ e 2 3 CRP__LacticAcid
+ e 1 2 Leucocytes__CRP
+ e 4 1 Leucocytes__Leucocytes
+ e 5 4 CRP__Leucocytes
+
+
+S
+v 1 Leucocytes
+v 2 LacticAcid
+v 3 CRP
+v 4 Leucocytes
+v 5 LacticAcid
+ e 1 2 Leucocytes__LacticAcid
+ e 2 3 LacticAcid__CRP
+ e 4 5 Leucocytes__LacticAcid
+ e 3 4 CRP__Leucocytes
+
+
+S
+v 1 AdmissionNC
+v 2 CRP
+v 3 Leucocytes
+v 4 ReleaseA
+v 5 ReturnER
+v 6 END
+v 7 Leucocytes
+ e 1 2 AdmissionNC__CRP
+ e 2 3 CRP__Leucocytes
+ e 3 4 Leucocytes__ReleaseA
+ e 4 5 ReleaseA__ReturnER
+ e 5 6 ReturnER__END
+ e 7 1 Leucocytes__AdmissionNC
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 LacticAcid
+v 6 CRP
+v 7 Leucocytes
+v 8 IVAntibiotics
+v 9 IVLiquid
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 6 7 CRP__Leucocytes
+ e 3 4 ERTriage__ERSepsisTriage
+ e 5 6 LacticAcid__CRP
+ e 4 5 ERSepsisTriage__LacticAcid
+ e 7 8 Leucocytes__IVAntibiotics
+ e 8 9 IVAntibiotics__IVLiquid
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 LacticAcid
+v 6 Leucocytes
+v 7 CRP
+v 8 IVLiquid
+v 9 IVAntibiotics
+v 10 AdmissionNC
+v 11 Leucocytes
+v 12 CRP
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 6 7 Leucocytes__CRP
+ e 3 4 ERTriage__ERSepsisTriage
+ e 4 5 ERSepsisTriage__LacticAcid
+ e 5 6 LacticAcid__Leucocytes
+ e 7 8 CRP__IVLiquid
+ e 8 9 IVLiquid__IVAntibiotics
+ e 9 10 IVAntibiotics__AdmissionNC
+ e 10 11 AdmissionNC__Leucocytes
+ e 11 12 Leucocytes__CRP
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 LacticAcid
+v 6 CRP
+v 7 Leucocytes
+v 8 IVLiquid
+v 9 IVAntibiotics
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 6 7 CRP__Leucocytes
+ e 3 4 ERTriage__ERSepsisTriage
+ e 5 6 LacticAcid__CRP
+ e 4 5 ERSepsisTriage__LacticAcid
+ e 7 8 Leucocytes__IVLiquid
+ e 8 9 IVLiquid__IVAntibiotics
+
+
+S
+v 1 AdmissionNC
+v 2 Leucocytes
+v 3 CRP
+v 4 Leucocytes
+ e 1 2 AdmissionNC__Leucocytes
+ e 2 3 Leucocytes__CRP
+ e 4 1 Leucocytes__AdmissionNC
+
+
+S
+v 1 CRP
+v 2 LacticAcid
+v 3 Leucocytes
+v 4 Leucocytes
+v 5 CRP
+v 6 LacticAcid
+v 7 CRP
+v 8 LacticAcid
+v 9 Leucocytes
+ e 2 3 LacticAcid__Leucocytes
+ e 1 2 CRP__LacticAcid
+ e 3 4 Leucocytes__Leucocytes
+ e 4 5 Leucocytes__CRP
+ e 5 6 CRP__LacticAcid
+ e 7 1 CRP__CRP
+ e 9 7 Leucocytes__CRP
+ e 8 9 LacticAcid__Leucocytes
+
+
+S
+v 1 AdmissionNC
+v 2 CRP
+v 3 Leucocytes
+v 4 CRP
+v 5 Leucocytes
+ e 1 2 AdmissionNC__CRP
+ e 2 3 CRP__Leucocytes
+ e 3 4 Leucocytes__CRP
+ e 4 5 CRP__Leucocytes
+
+
+S
+v 1 AdmissionNC
+v 2 CRP
+v 3 Leucocytes
+v 4 CRP
+v 5 Leucocytes
+v 6 CRP
+ e 1 2 AdmissionNC__CRP
+ e 2 3 CRP__Leucocytes
+ e 3 4 Leucocytes__CRP
+ e 5 1 Leucocytes__AdmissionNC
+ e 6 5 CRP__Leucocytes
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 Leucocytes
+v 6 CRP
+v 7 AdmissionIC
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 4 5 ERSepsisTriage__Leucocytes
+ e 5 6 Leucocytes__CRP
+ e 3 4 ERTriage__ERSepsisTriage
+ e 6 7 CRP__AdmissionIC
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 CRP
+v 5 Leucocytes
+v 6 LacticAcid
+v 7 AdmissionNC
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 3 4 ERTriage__CRP
+ e 4 5 CRP__Leucocytes
+ e 5 6 Leucocytes__LacticAcid
+ e 6 7 LacticAcid__AdmissionNC
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 IVLiquid
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 3 4 ERTriage__IVLiquid
+
+
+S
+v 1 AdmissionNC
+v 2 Leucocytes
+v 3 CRP
+v 4 Leucocytes
+v 5 CRP
+v 6 Leucocytes
+v 7 CRP
+v 8 CRP
+v 9 Leucocytes
+v 10 ReleaseA
+v 11 END
+ e 2 3 Leucocytes__CRP
+ e 3 4 CRP__Leucocytes
+ e 4 5 Leucocytes__CRP
+ e 5 6 CRP__Leucocytes
+ e 6 7 Leucocytes__CRP
+ e 1 2 AdmissionNC__Leucocytes
+ e 7 8 CRP__CRP
+ e 8 9 CRP__Leucocytes
+ e 9 10 Leucocytes__ReleaseA
+ e 10 11 ReleaseA__END
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 LacticAcid
+v 6 Leucocytes
+v 7 CRP
+v 8 IVAntibiotics
+v 9 IVLiquid
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 3 4 ERTriage__ERSepsisTriage
+ e 4 5 ERSepsisTriage__LacticAcid
+ e 5 6 LacticAcid__Leucocytes
+ e 6 7 Leucocytes__CRP
+ e 7 8 CRP__IVAntibiotics
+ e 8 9 IVAntibiotics__IVLiquid
+
+
+S
+v 1 Leucocytes
+v 2 CRP
+v 3 Leucocytes
+v 4 CRP
+v 5 ReleaseA
+v 6 ReturnER
+v 7 END
+v 8 Leucocytes
+v 9 AdmissionNC
+v 10 CRP
+ e 2 3 CRP__Leucocytes
+ e 5 6 ReleaseA__ReturnER
+ e 6 7 ReturnER__END
+ e 1 2 Leucocytes__CRP
+ e 3 4 Leucocytes__CRP
+ e 4 5 CRP__ReleaseA
+ e 8 1 Leucocytes__Leucocytes
+ e 10 8 CRP__Leucocytes
+ e 9 10 AdmissionNC__CRP
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 IVLiquid
+v 6 Leucocytes
+v 7 CRP
+v 8 LacticAcid
+v 9 IVAntibiotics
+v 10 LacticAcid
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 3 4 ERTriage__ERSepsisTriage
+ e 4 5 ERSepsisTriage__IVLiquid
+ e 5 6 IVLiquid__Leucocytes
+ e 6 7 Leucocytes__CRP
+ e 7 8 CRP__LacticAcid
+ e 8 9 LacticAcid__IVAntibiotics
+ e 9 10 IVAntibiotics__LacticAcid
+
+
+S
+v 1 IVAntibiotics
+v 2 LacticAcid
+v 3 CRP
+v 4 START
+v 5 ERRegistration
+v 6 ERTriage
+v 7 ERSepsisTriage
+v 8 IVLiquid
+v 9 LacticAcid
+v 10 Leucocytes
+ e 1 2 IVAntibiotics__LacticAcid
+ e 3 1 CRP__IVAntibiotics
+ e 4 5 START__ERRegistration
+ e 5 6 ERRegistration__ERTriage
+ e 6 7 ERTriage__ERSepsisTriage
+ e 7 8 ERSepsisTriage__IVLiquid
+ e 9 10 LacticAcid__Leucocytes
+ e 8 9 IVLiquid__LacticAcid
+ e 10 3 Leucocytes__CRP
+
+
+S
+v 1 AdmissionNC
+v 2 Leucocytes
+v 3 CRP
+v 4 Leucocytes
+v 5 CRP
+v 6 Leucocytes
+v 7 CRP
+v 8 Leucocytes
+v 9 CRP
+ e 3 4 CRP__Leucocytes
+ e 4 5 Leucocytes__CRP
+ e 1 2 AdmissionNC__Leucocytes
+ e 2 3 Leucocytes__CRP
+ e 5 6 CRP__Leucocytes
+ e 7 8 CRP__Leucocytes
+ e 6 7 Leucocytes__CRP
+ e 8 9 Leucocytes__CRP
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 Leucocytes
+v 4 CRP
+v 5 CRP
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__Leucocytes
+ e 3 4 Leucocytes__CRP
+ e 5 1 CRP__CRP
+
+
+S
+v 1 Leucocytes
+v 2 Leucocytes
+v 3 Leucocytes
+v 4 Leucocytes
+v 5 CRP
+v 6 Leucocytes
+v 7 CRP
+ e 4 5 Leucocytes__CRP
+ e 1 2 Leucocytes__Leucocytes
+ e 2 3 Leucocytes__Leucocytes
+ e 3 4 Leucocytes__Leucocytes
+ e 6 1 Leucocytes__Leucocytes
+ e 7 6 CRP__Leucocytes
+
+
+S
+v 1 Leucocytes
+v 2 LacticAcid
+v 3 CRP
+v 4 CRP
+v 5 Leucocytes
+v 6 LacticAcid
+v 7 LacticAcid
+v 8 CRP
+v 9 Leucocytes
+v 10 AdmissionNC
+v 11 Leucocytes
+v 12 CRP
+ e 1 2 Leucocytes__LacticAcid
+ e 2 3 LacticAcid__CRP
+ e 3 4 CRP__CRP
+ e 4 5 CRP__Leucocytes
+ e 5 6 Leucocytes__LacticAcid
+ e 6 7 LacticAcid__LacticAcid
+ e 8 9 CRP__Leucocytes
+ e 7 8 LacticAcid__CRP
+ e 10 11 AdmissionNC__Leucocytes
+ e 11 12 Leucocytes__CRP
+ e 9 10 Leucocytes__AdmissionNC
+
+
+S
+v 1 Leucocytes
+v 2 LacticAcid
+v 3 CRP
+v 4 Leucocytes
+v 5 CRP
+v 6 LacticAcid
+ e 1 2 Leucocytes__LacticAcid
+ e 2 3 LacticAcid__CRP
+ e 4 1 Leucocytes__Leucocytes
+ e 6 4 LacticAcid__Leucocytes
+ e 5 6 CRP__LacticAcid
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 IVAntibiotics
+v 4 AdmissionNC
+v 5 Leucocytes
+v 6 CRP
+v 7 ReleaseA
+v 8 END
+v 9 ERSepsisTriage
+v 10 START
+v 11 ERRegistration
+v 12 IVLiquid
+v 13 ERTriage
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__IVAntibiotics
+ e 3 4 IVAntibiotics__AdmissionNC
+ e 4 5 AdmissionNC__Leucocytes
+ e 7 8 ReleaseA__END
+ e 5 6 Leucocytes__CRP
+ e 6 7 CRP__ReleaseA
+ e 9 1 ERSepsisTriage__CRP
+ e 10 11 START__ERRegistration
+ e 11 12 ERRegistration__IVLiquid
+ e 12 13 IVLiquid__ERTriage
+ e 13 9 ERTriage__ERSepsisTriage
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 LacticAcid
+v 4 Leucocytes
+v 5 CRP
+v 6 IVLiquid
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__LacticAcid
+ e 4 5 Leucocytes__CRP
+ e 3 4 LacticAcid__Leucocytes
+ e 5 6 CRP__IVLiquid
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 IVLiquid
+v 6 CRP
+v 7 Leucocytes
+v 8 LacticAcid
+v 9 IVAntibiotics
+v 10 LacticAcid
+v 11 END
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 6 7 CRP__Leucocytes
+ e 9 10 IVAntibiotics__LacticAcid
+ e 3 4 ERTriage__ERSepsisTriage
+ e 5 6 IVLiquid__CRP
+ e 4 5 ERSepsisTriage__IVLiquid
+ e 7 8 Leucocytes__LacticAcid
+ e 8 9 LacticAcid__IVAntibiotics
+ e 10 11 LacticAcid__END
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 Leucocytes
+v 4 CRP
+v 5 Leucocytes
+v 6 CRP
+v 7 ReleaseB
+v 8 END
+ e 4 5 CRP__Leucocytes
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__Leucocytes
+ e 3 4 Leucocytes__CRP
+ e 5 6 Leucocytes__CRP
+ e 6 7 CRP__ReleaseB
+ e 7 8 ReleaseB__END
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 Leucocytes
+v 6 CRP
+v 7 IVAntibiotics
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 4 5 ERSepsisTriage__Leucocytes
+ e 5 6 Leucocytes__CRP
+ e 3 4 ERTriage__ERSepsisTriage
+ e 6 7 CRP__IVAntibiotics
+
+
+S
+v 1 START
+v 2 ERRegistration
+v 3 ERTriage
+v 4 ERSepsisTriage
+v 5 IVLiquid
+v 6 IVAntibiotics
+v 7 CRP
+v 8 Leucocytes
+v 9 LacticAcid
+v 10 AdmissionIC
+ e 1 2 START__ERRegistration
+ e 2 3 ERRegistration__ERTriage
+ e 7 8 CRP__Leucocytes
+ e 3 4 ERTriage__ERSepsisTriage
+ e 6 7 IVAntibiotics__CRP
+ e 4 5 ERSepsisTriage__IVLiquid
+ e 5 6 IVLiquid__IVAntibiotics
+ e 8 9 Leucocytes__LacticAcid
+ e 9 10 LacticAcid__AdmissionIC
+
+
+S
+v 1 CRP
+v 2 Leucocytes
+v 3 ReleaseB
+v 4 END
+v 5 LacticAcid
+v 6 Leucocytes
+v 7 LacticAcid
+v 8 Leucocytes
+v 9 CRP
+ e 1 2 CRP__Leucocytes
+ e 2 3 Leucocytes__ReleaseB
+ e 3 4 ReleaseB__END
+ e 5 1 LacticAcid__CRP
+ e 7 8 LacticAcid__Leucocytes
+ e 8 9 Leucocytes__CRP
+ e 6 7 Leucocytes__LacticAcid
+ e 9 5 CRP__LacticAcid
+
+
+S
+v 1 AdmissionNC
+v 2 Leucocytes
+v 3 CRP
+v 4 LacticAcid
+v 5 END
+ e 1 2 AdmissionNC__Leucocytes
+ e 2 3 Leucocytes__CRP
+ e 3 4 CRP__LacticAcid
+ e 4 5 LacticAcid__END
+
+
