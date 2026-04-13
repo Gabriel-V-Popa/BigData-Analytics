@@ -101,16 +101,21 @@ def main():
     for current_scenario in args.scenario:
         current_anomalies = []
         match current_scenario:
+            # Fare degli scenari su: Il primo + frequente, il primo con distanza minima, etc.
             case "A1":
                 current_anomalies = filter_all_anomalies(features_dict)
                 scenario_params_list.append("all")
             case "A2_top":
                 current_anomalies = filter_top_k_frequent(features_dict, k=config.get('top_k', 5))
                 scenario_params_list.append(f"top_{config.get('top_k', 5)}")
+                # Iterazione su quelle + frequenti (al secondo passaggio, la seconda più frequente diventa la prima)
+                # Fare calcolo metriche riferito ad ogni step
             case "A2_bottom":
                 current_anomalies = filter_bottom_k_frequent(features_dict, k=config.get('bottom_k', 5))
                 scenario_params_list.append(f"bottom_{config.get('bottom_k', 5)}")
             case "B1_exact":
+                # Selezionare la prima con GED minore (se ce ne sono più di una, per ora, ne prendiamo una a caso),
+                # poi possiamo pensare ad utilizzare la semantica per la selezione (step obbligatorio)
                 current_anomalies = filter_by_ged(features_dict, exact_ged=config.get('exact_ged', 2))
                 scenario_params_list.append(f"exact_ged_{config.get('exact_ged', 2)}")
             case "B1_extreme_min":

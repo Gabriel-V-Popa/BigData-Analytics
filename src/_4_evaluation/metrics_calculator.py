@@ -7,22 +7,18 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.objects.petri_net.importer import importer as pnml_importer
 
 from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
-from pm4py.algo.evaluation.precision import algorithm as precision_evaluator
 from pm4py.algo.evaluation.generalization import algorithm as generalization_evaluator
 from pm4py.algo.evaluation.simplicity import algorithm as simplicity_evaluator
 
+# Importazione diretta e specifica della variante richiesta per la Precision
+from pm4py.algo.evaluation.precision.variants import automaton_after_align
 
-def evaluate_model(xes_path: Union[str, Path], pnml_path: Union[str, Path]) -> Dict[str, float]:
+def evaluate_model(xes_path: Union[str, Path], pnml_path: Union[str, Path], num_runs: int = 5) -> Dict[str, float]:
     """ 
     Calculates the metrics of Fitness, Precision, Generalization, and Simplicity.
-    
-    To call it from other scripts, just import this function and pass the paths 
-    of the log and the model:
-
-    from src.phase4_evaluation.metrics_calculator import evaluate_model
-    res = evaluate_model("data/dataset_1/processed/log.xes", "data/dataset_1/raw/model.pnml")
+    Precision and Generalization are calculated multiple times and averaged 
+    to smooth out non-deterministic variations in alignment-based evaluation.
     """
-    # Convert paths to string in case pathlib.Path objects are passed
     xes_path_str = str(xes_path)
     pnml_path_str = str(pnml_path)
 
@@ -33,41 +29,43 @@ def evaluate_model(xes_path: Union[str, Path], pnml_path: Union[str, Path]) -> D
     net, im, fm = pnml_importer.apply(pnml_path_str)
 
     # =========================
-    # Fitness (Alignment-based)
+    # Fitness & Simplicity (Deterministiche, calcolate 1 sola volta)
     # =========================
     fitness = fitness_evaluator.apply(
         log, net, im, fm,
         variant=fitness_evaluator.Variants.ALIGNMENT_BASED
     )
-
-    # =========================
-    # Precision (Alignment-based)
-    # =========================
-    precision = precision_evaluator.apply(
-        log, net, im, fm,
-        variant=precision_evaluator.Variants.ALIGN_ETCONFORMANCE
-    )
-
-    # =========================
-    # Generalization
-    # =========================
-    generalization = generalization_evaluator.apply(log, net, im, fm)
-
-    # =========================
-    # Simplicity
-    # =========================
     simplicity = simplicity_evaluator.apply(net)
 
     # =========================
-    # RETURN RESULTS
+    # Precision & Generalization (Ripetute per fare la media)
     # =========================
-    # Using .get() ensures backward/forward compatibility with different pm4py versions
+    precisions = []
+    generalizations = []
+
+    print(f"[INFO] Calcolo Metriche Avanzate: media su {num_runs} esecuzioni...")
+    for i in range(num_runs):
+        # Precision: Utilizzo diretto dell'Automaton After Alignment
+        p_val = automaton_after_align.apply(log, net, im, fm)
+        precisions.append(p_val)
+
+        # Generalization
+        g_val = generalization_evaluator.apply(log, net, im, fm)
+        generalizations.append(g_val)
+
+    # Calcolo Medie
+    avg_precision = sum(precisions) / num_runs
+    avg_generalization = sum(generalizations) / num_runs
+
+    # =========================
+    # Estrazione e formattazione
+    # =========================
     fit_value = fitness.get("averageFitness", fitness.get("log_fitness", 0.0))
 
     return {
         "fitness": float(fit_value),
-        "precision": float(precision),
-        "generalization": float(generalization),
+        "precision": float(avg_precision),
+        "generalization": float(avg_generalization),
         "simplicity": float(simplicity)
     }
 
