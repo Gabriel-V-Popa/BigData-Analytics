@@ -3,8 +3,8 @@ import pm4py
 
 # ======== 1️⃣ Input ========
 #log_path = "Sepsis Cases - Event Log_log_con_start_end.xes"
-log_path ="fineExp_Complete.xes"
-output_folder = "Modelli_datasets_raw"
+log_path =r"C:\Users\gabri\OneDrive\Desktop\BigDataProcessMining\data\SEPSIS\sepsis.xes"
+output_folder = r"C:\Users\gabri\OneDrive\Desktop\BigDataProcessMining\data\SEPSIS\models_raw"
 os.makedirs(output_folder, exist_ok=True)
 
 # ======== 2️⃣ Caricamento log ========
