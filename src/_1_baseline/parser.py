@@ -54,3 +54,12 @@ def parse_subelements(file_path: Union[str, Path], custom_ids: Optional[List[str
         graphs[sub_id] = graph
         
     return graphs
+
+
+def add_manual_sub(sub_dict, sub_id, nodes_dict, edges_list) -> Dict[str, nx.DiGraph]:
+    G = nx.DiGraph()
+    for nid, lbl in nodes_dict.items():
+        G.add_node(nid, label=lbl)
+        G.add_edges_from(edges_list)
+        sub_dict[sub_id] = G
+    return sub_dict

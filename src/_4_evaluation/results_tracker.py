@@ -8,7 +8,8 @@ def update_results_matrix(matrix_path: Path,
                           scenario: str, 
                           modified_traces: int, 
                           metrics: Dict[str, float],
-                          parameters: str = "N/A") -> pd.DataFrame:
+                          parameters: str = "N/A",
+                          tolerance_val: int = 0) -> pd.DataFrame:
     """
     Updates the central CSV matrix with the results of the latest experiment.
     If the file or its parent directories don't exist, it creates them.
@@ -25,7 +26,8 @@ def update_results_matrix(matrix_path: Path,
         'Fitness': round(metrics['fitness'], 4),
         'Precision': round(metrics['precision'], 4),
         'Generalization': round(metrics['generalization'], 4),
-        'Simplicity': round(metrics['simplicity'], 4)
+        'Simplicity': round(metrics['simplicity'], 4),
+        'Tolerance': tolerance_val
     }
     
     # If the file exists, load it. Otherwise, create an empty dataframe.

@@ -13,7 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from src._1_baseline.bottleneck_extractor import extract_process_metrics
 from src._1_baseline.frequencies_extractor import extract_frequencies
 from src._1_baseline.ged_mapper import get_features
-from src._1_baseline.parser import parse_subelements
+from src._1_baseline.parser import parse_subelements, add_manual_sub
 
 # --- Imports from PHASE 2 ---
 from src._2_engine.repair import run_repair
@@ -43,15 +43,14 @@ def main():
     args = parser.parse_args()
 
     dataset_name = args.dataset
-    base_data_path = Path("data") / dataset_name
-    
+    base_data_path = Path("data") / "fineExp"
     log_path = base_data_path / f"{dataset_name}.xes"
-    csv_path = base_data_path / f"{dataset_name}_table2_on_file.csv"
+    csv_path = base_data_path / f"fineExp_table2_on_file.csv"
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
-    pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
+    pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
     matrix_path = Path("results") / "experiments_matrix.csv"
-    config_path = Path(args.config) if args.config else Path("config") / f"config_{dataset_name}.yaml"
+    config_path = Path(args.config) if args.config else Path("config") / f"config_fineExp.yaml"
         
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
                        (corr_path, "Correct TXT"), (config_path, "Config YAML"), (pnml_path, "PNML")]:
@@ -62,7 +61,7 @@ def main():
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
         
-    for key in ['top_k', 'bottom_k', 'top_k_bottlenecks', 'exact_ged', 'min_extreme_ged', 'max_extreme_ged']:
+    for key in ['top_k', 'bottom_k', 'top_k_bottlenecks', 'exact_ged', 'min_extreme_ged', 'max_extreme_ged', 'repair_tolerance']:
         if isinstance(config.get(key), list):
             config[key] = config[key][0]
         
@@ -74,6 +73,13 @@ def main():
     anomaly_ids = list(freq_dict.keys())
     anom_graphs = parse_subelements(anom_path, custom_ids=anomaly_ids)
     corr_graphs = parse_subelements(corr_path)
+        
+    # Aggiungiamo i 5 grafi mancanti per arrivare a 32
+    anom_graphs = add_manual_sub(anom_graphs, "Sub174", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub179", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub176", {1: "AddPenalty", 2: "AppealToPrefecture", 3: "AppealToJudge", 4: "SendAppeal"}, [(1,2), (2,3), (3,4)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub178", {1: "AddPenalty", 2: "SendAppeal"}, [(1,2)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub180", {1: "SendAppeal", 2: "AppealToJudge", 3: "AddPenalty"}, [(1,2), (2,3)])
 
     # 1. CACHING: Prevent GED recalculation on every grid search iteration
     cache_path = base_data_path / "custom" / "features_cache.pkl"
@@ -145,6 +151,7 @@ def main():
     target_anomalies = list(combined_anomalies)
     final_scenario_name = "+".join(args.scenario)
     final_params_string = "+".join(scenario_params_list)
+    tolerance_val = config.get('repair_tolerance', 0)
 
     if not target_anomalies:
         print(f"[WARNING] Combined scenario '{final_scenario_name}' resulted in 0 anomalies. Exiting.")
@@ -154,7 +161,7 @@ def main():
     # --- PHASE 2: Alteration Engine ---
     # ----------------------------------
     if args.strategy == "repair":
-        altered_log, modified_traces = run_repair(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
+        altered_log, modified_traces = run_repair(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies, tolerance=tolerance_val)
     elif args.strategy == "infect":
         altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
         
@@ -162,7 +169,9 @@ def main():
     # --- PHASE 4: Saving ---
     # -----------------------
     # 3. DYNAMIC OUTPUT PATH: Prevent overwriting by including the specific parameters
-    output_path = base_data_path / "custom" / "processed" / f"{dataset_name}_{args.strategy}_{final_scenario_name}_{final_params_string}.xes"
+    output_path = base_data_path / "custom" / "processed" / f"{dataset_name}_{args.strategy}_{final_scenario_name}_{final_params_string}_{tolerance_val}.xes"
+    if output_path.exists():
+        output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     pm4py.write_xes(altered_log, str(output_path))
     
@@ -173,7 +182,7 @@ def main():
         
     print(f"\n[!] Evaluating new {args.strategy.upper()} log for scenario {final_scenario_name}...")
     new_metrics = evaluate_model(output_path, pnml_path)
-    update_results_matrix(matrix_path, dataset_name, args.strategy, final_scenario_name, modified_traces, new_metrics, parameters=final_params_string)
+    update_results_matrix(matrix_path, dataset_name, args.strategy, final_scenario_name, modified_traces, new_metrics, parameters=final_params_string, tolerance_val=tolerance_val)
     print("\nExperiment completed successfully!")
      
 if __name__ == "__main__":

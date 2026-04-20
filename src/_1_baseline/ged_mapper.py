@@ -35,9 +35,9 @@ def get_features(anomalous_graphs: Dict[str, nx.DiGraph],
 
     for anom_id in target_subs:
         if anom_id not in anomalous_graphs:
-            print(f"[WARNING] Graph for {anom_id} missing from TXT file. Skipping.")
+            print(f"[WARNING] Graph for {anom_id} missing from TXT file. Adding manually.")
             continue
-            
+                
         G_anom = anomalous_graphs[anom_id]
         anom_node_count = len(G_anom.nodes())
         
