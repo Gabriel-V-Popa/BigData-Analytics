@@ -6,7 +6,7 @@
 
 # --- A SCENARIOS: Global & Frequency ---
 # A2_top: How many top-frequent anomalies to select?
-top_k: [1, 10]
+top_k: [2, 10]
 
 # A2_bottom: How many least-frequent anomalies to select?
 bottom_k: [10]
@@ -38,4 +38,4 @@ time_unit: "days"
 # --- E ENGINE SETTINGS: Alteration Parameters ---
 # Tolleranza massima (Token Edit Distance) per considerare un frammento di traccia 
 # un match valido con l'anomalia cercata (0 = match esatto, 1 = una differenza, ecc.)
-repair_tolerance: [1, 2]
+repair_tolerance: [1]

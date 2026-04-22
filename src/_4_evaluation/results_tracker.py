@@ -41,7 +41,8 @@ def update_results_matrix(matrix_path: Path,
         (df['Dataset'] == dataset) & 
         (df['Strategy'] == strategy.upper()) & 
         (df['Scenario'] == scenario) &
-        (df['Parameters'] == parameters)
+        (df['Parameters'] == parameters) &
+        (df['Tolerance'] == tolerance_val)
     )
     
     if condition.any():
