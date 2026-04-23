@@ -1,5 +1,12 @@
 import networkx as nx
 from typing import List
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+
+sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+
 
 def get_label_sequence(graph: nx.DiGraph) -> List[str]:
     """
@@ -76,7 +83,7 @@ def token_hamming_distance(seq1: List[str], seq2: List[str]) -> int:
 
     return costo_totale
 
-def find_fuzzy_subsequence(trace_labels: List[str], anom_seq: List[str], max_tolerance: int = 1):
+def find_fuzzy_subsequence(trace_labels: List[str], anom_seq: List[str], max_tolerance: int = 1, min_similarity: float = 0.75):
     """
     Scansiona la traccia per trovare la porzione più simile all'anomalia,
     rispettando una tolleranza massima di Edit Distance.
@@ -101,10 +108,31 @@ def find_fuzzy_subsequence(trace_labels: List[str], anom_seq: List[str], max_tol
             window = trace_labels[i : i + window_size]
             dist = token_hamming_distance(window, anom_seq)
 
-            # Se troviamo un match valido e migliore dei precedenti
-            if dist <= max_tolerance and dist < best_dist:
-                best_dist = dist
-                best_start = i
-                best_end = i + window_size - 1
+            if dist <= max_tolerance:
+                
+                # Calcoliamo SBERT solo su questa finestra molto promettente
+                sim_score = calculate_cosine_similarity(window, anom_seq)
+                
+                # Se supera la soglia semantica ed è il match migliore finora
+                if sim_score >= min_similarity and dist < best_dist:
+                    best_dist = dist
+                    best_start = i
+                    best_end = i + window_size - 1
 
     return best_start, best_end, best_dist
+
+def calculate_cosine_similarity(seq1: List[str], seq2: List[str]) -> float:
+    """
+    Calcola la similarità semantica tra due sequenze di label trasformandole in testo.
+    """
+    # 1. Trasformiamo le liste di stringhe in frasi singole
+    text1 = " ".join(seq1)
+    text2 = " ".join(seq2)
+    
+    # 2. Calcoliamo gli embedding
+    embedding1 = sbert_model.encode([text1])
+    embedding2 = sbert_model.encode([text2])
+    
+    # 3. Restituiamo il punteggio di similarità (da 0.0 a 1.0)
+    sim_score = cosine_similarity(embedding1, embedding2)[0][0]
+    return sim_score

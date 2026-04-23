@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # --- Imports from PHASE 1 ---
 from src._1_baseline.frequencies_extractor import extract_frequencies
 from src._1_baseline.ged_mapper import get_features
-from src._1_baseline.parser import parse_subelements
+from src._1_baseline.parser import parse_subelements, add_manual_sub
 
 # --- Imports from PHASE 2 ---
 from src._2_engine.repair import run_repair
@@ -32,10 +32,10 @@ def main():
 
     # --- Path Setup ---
     dataset_name = args.dataset
-    base_data_path = Path("data") / dataset_name
+    base_data_path = Path("data") / "fineExp"
     
     log_path = base_data_path / f"{dataset_name}.xes"
-    csv_path = base_data_path / f"{dataset_name}_table2_on_file.csv"
+    csv_path = base_data_path / f"fineExp_table2_on_file.csv"
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
@@ -44,7 +44,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     
     # Creiamo un CSV dedicato in base allo scenario per non sovrascrivere i risultati
-    results_csv_path = Path("results") / f"incremental_matrix_{dataset_name}_{args.scenario}.csv"
+    results_csv_path = Path("results") / f"incremental_matrix_{dataset_name}_{args.scenario}_Enzo.csv"
     results_csv_path.parent.mkdir(parents=True, exist_ok=True)
         
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
@@ -60,6 +60,15 @@ def main():
     anomaly_ids = list(freq_dict.keys())
     anom_graphs = parse_subelements(anom_path, custom_ids=anomaly_ids)
     corr_graphs = parse_subelements(corr_path)
+    
+    
+    # Aggiungiamo i 5 grafi mancanti per arrivare a 32
+    anom_graphs = add_manual_sub(anom_graphs, "Sub174", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub179", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub176", {1: "AddPenalty", 2: "AppealToPrefecture", 3: "AppealToJudge", 4: "SendAppeal"}, [(1,2), (2,3), (3,4)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub178", {1: "AddPenalty", 2: "SendAppeal"}, [(1,2)])
+    anom_graphs = add_manual_sub(anom_graphs, "Sub180", {1: "SendAppeal", 2: "AppealToJudge", 3: "AddPenalty"}, [(1,2), (2,3)])
+
 
     cache_path = base_data_path / "custom" / "features_cache.pkl"
     if cache_path.exists():
@@ -104,10 +113,13 @@ def main():
         'Fitness': round(base_metrics['fitness'], 4),
         'Precision': round(base_metrics['precision'], 4),
         'Generalization': round(base_metrics['generalization'], 4),
-        'Simplicity': round(base_metrics['simplicity'], 4)
+        'Simplicity': round(base_metrics['simplicity'], 4),
+        'Tolerance': 0
     })
     
     cumulative_traces = 0
+    
+    tolerance_val = 0
 
     # Ciclo a cascata
     for i, anom_id in enumerate(target_anomalies, start=1):
@@ -117,7 +129,7 @@ def main():
         print(f"\n--- STEP {i}/{len(target_anomalies)}: Riparazione {anom_id} (Frequenza: {freq}, GED: {ged:.2f}) ---")
         
         # Ripara SOLTANTO l'anomalia corrente sul log GIA' MODIFICATO nei passaggi precedenti
-        current_log, modified_traces = run_repair(current_log, anom_graphs, corr_graphs, features_dict, [anom_id])
+        current_log, modified_traces = run_repair(current_log, anom_graphs, corr_graphs, features_dict, [anom_id], tolerance = tolerance_val)
         cumulative_traces += modified_traces
         
         # Salva il log temporaneo per questo specifico step
@@ -136,7 +148,8 @@ def main():
             'Fitness': round(step_metrics['fitness'], 4),
             'Precision': round(step_metrics['precision'], 4),
             'Generalization': round(step_metrics['generalization'], 4),
-            'Simplicity': round(step_metrics['simplicity'], 4)
+            'Simplicity': round(step_metrics['simplicity'], 4),
+            'Tolerance': tolerance_val
         })
         
         # Salva i risultati subito su CSV (così se interrompi lo script a metà non perdi i dati!)

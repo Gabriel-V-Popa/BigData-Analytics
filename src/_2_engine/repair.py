@@ -23,8 +23,7 @@ def run_repair(log: EventLog,
     for anom_id in target_anomalies:
         if anom_id not in features_dict:
             continue
-        if anom_id == 'Sub19':
-                continue
+        
         print(f"Anomaly {anom_id} matched with {features_dict[anom_id]['matched_with']}")
             
         corr_id = features_dict[anom_id]['matched_with']
@@ -81,15 +80,6 @@ def run_repair(log: EventLog,
                 # Usiamo il concept:name come chiave per trovare l'evento corrispondente
                 old_events_dict = {event["concept:name"]: event for event in trace[start_idx : end_idx + 1]}
                 
-                #Confrontare la sequenza della traccia anomala con la sequenza corretta
-                #    se ho la traccia che corrisponde alla sequenza anomale (tramite il parametro di tolleranza)
-                #    è tipo A -> B -> C -> D -> E
-                #    e la sequenza corretta e' A -> B -> C -> D -> E
-                #    allora non devo sostituire la traccia ma mantengo direttamente la sequenza corretta
-                # if trace_labels[start_idx : end_idx + 1]== corr_seq:
-                #     print("  [INFO] La sequenza anomala corrisponde alla sequenza corretta. Non sostituzione.")
-                #     break
-                
                 # Create new correct events
                 new_events = []
                 for i, label in enumerate(corr_seq):
@@ -110,6 +100,16 @@ def run_repair(log: EventLog,
                 
                 # 1. CATTURA LA VARIANTE REALE: Estraiamo le label esatte che stiamo per cancellare dalla traccia
                 found_variant = trace_labels[start_idx : end_idx + 1]
+                
+                # =================================================================
+                # NUOVO CONTROLLO: Evitare di riparare tracce che sono già corrette
+                # =================================================================
+                if found_variant == corr_seq:
+                    print(f"  [INFO] Saltata sostituzione: la sequenza trovata {found_variant} è già perfettamente corretta.")
+                    # Spostiamo il cursore in avanti per superare questa porzione e non ricalcolarla
+                    search_offset = start_idx + len(corr_seq)
+                    # Usiamo CONTINUE per saltare il resto del codice di sostituzione e ripartire dal while True
+                    continue
                 
                 # Replace the slice in the trace
                 trace[start_idx : end_idx + 1] = new_events
