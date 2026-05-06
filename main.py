@@ -51,7 +51,8 @@ def main():
     pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
     matrix_path = Path("results") / "experiments_matrix.csv"
     config_path = Path(args.config) if args.config else Path("config") / f"config_fineExp.yaml"
-        
+    sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
+    
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
                        (corr_path, "Correct TXT"), (config_path, "Config YAML"), (pnml_path, "PNML")]:
         if not path.exists():
@@ -106,42 +107,36 @@ def main():
     
     for current_scenario in args.scenario:
         current_anomalies = []
-        match current_scenario:
-            # Fare degli scenari su: Il primo + frequente, il primo con distanza minima, etc.
-            case "A1":
-                current_anomalies = filter_all_anomalies(features_dict)
-                scenario_params_list.append("all")
-            case "A2_top":
-                current_anomalies = filter_top_k_frequent(features_dict, k=config.get('top_k', 5))
-                scenario_params_list.append(f"top_{config.get('top_k', 5)}")
-                # Iterazione su quelle + frequenti (al secondo passaggio, la seconda più frequente diventa la prima)
-                # Fare calcolo metriche riferito ad ogni step
-            case "A2_bottom":
-                current_anomalies = filter_bottom_k_frequent(features_dict, k=config.get('bottom_k', 5))
-                scenario_params_list.append(f"bottom_{config.get('bottom_k', 5)}")
-            case "B1_exact":
-                # Selezionare la prima con GED minore (se ce ne sono più di una, per ora, ne prendiamo una a caso),
-                # poi possiamo pensare ad utilizzare la semantica per la selezione (step obbligatorio)
-                current_anomalies = filter_by_ged(features_dict, exact_ged=config.get('exact_ged', 2))
-                scenario_params_list.append(f"exact_ged_{config.get('exact_ged', 2)}")
-            case "B1_extreme_min":
-                current_anomalies = filter_by_ged(features_dict, min_ged=config.get('min_extreme_ged', 4))
-                scenario_params_list.append(f"min_extreme_{config.get('min_extreme_ged', 4)}")
-            case "B1_extreme_max":
-                current_anomalies = filter_by_ged(features_dict, max_ged=config.get('max_extreme_ged', 6))
-                scenario_params_list.append(f"max_extreme_{config.get('max_extreme_ged', 6)}")
-            case "B2_bottleneck":
-                current_anomalies = filter_by_bottleneck(features_dict, anom_graphs, auto_bottlenecks)
-                scenario_params_list.append(f"bottleneck_top_{config.get('top_k_bottlenecks', 3)}")
-            case "B3_early":
-                current_anomalies = filter_by_position(features_dict, anom_graphs, auto_early, "Early")
-                scenario_params_list.append(f"early")
-            case "B3_late":
-                current_anomalies = filter_by_position(features_dict, anom_graphs, auto_late, "Late")
-                scenario_params_list.append(f"late")
-            case _:
-                print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
-                sys.exit(1)
+        if current_scenario == "A1":
+            current_anomalies = filter_all_anomalies(features_dict)
+            scenario_params_list.append("all")
+        elif current_scenario == "A2_top":
+            current_anomalies = filter_top_k_frequent(features_dict, k=config.get('top_k', 5))
+            scenario_params_list.append(f"top_{config.get('top_k', 5)}")
+        elif current_scenario == "A2_bottom":
+            current_anomalies = filter_bottom_k_frequent(features_dict, k=config.get('bottom_k', 5))
+            scenario_params_list.append(f"bottom_{config.get('bottom_k', 5)}")
+        elif current_scenario == "B1_exact":
+            current_anomalies = filter_by_ged(features_dict, exact_ged=config.get('exact_ged', 2))
+            scenario_params_list.append(f"exact_ged_{config.get('exact_ged', 2)}")
+        elif current_scenario == "B1_extreme_min":
+            current_anomalies = filter_by_ged(features_dict, min_ged=config.get('min_extreme_ged', 4))
+            scenario_params_list.append(f"min_extreme_{config.get('min_extreme_ged', 4)}")
+        elif current_scenario == "B1_extreme_max":
+            current_anomalies = filter_by_ged(features_dict, max_ged=config.get('max_extreme_ged', 6))
+            scenario_params_list.append(f"max_extreme_{config.get('max_extreme_ged', 6)}")
+        elif current_scenario == "B2_bottleneck":
+            current_anomalies = filter_by_bottleneck(features_dict, anom_graphs, auto_bottlenecks)
+            scenario_params_list.append(f"bottleneck_top_{config.get('top_k_bottlenecks', 3)}")
+        elif current_scenario == "B3_early":
+            current_anomalies = filter_by_position(features_dict, anom_graphs, auto_early, "Early")
+            scenario_params_list.append(f"early")
+        elif current_scenario == "B3_late":
+            current_anomalies = filter_by_position(features_dict, anom_graphs, auto_late, "Late")
+            scenario_params_list.append(f"late")
+        else:
+            print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
+            sys.exit(1)
                 
         if combined_anomalies is None:
             combined_anomalies = set(current_anomalies)
@@ -161,7 +156,17 @@ def main():
     # --- PHASE 2: Alteration Engine ---
     # ----------------------------------
     if args.strategy == "repair":
-        altered_log, modified_traces = run_repair(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies, tolerance=tolerance_val)
+        # [MODIFICATO] Tolto 'tolerance', aggiunto 'sgiso_env_path'
+        altered_log, modified_traces = run_repair(
+            original_log, 
+            anom_graphs, 
+            corr_graphs, 
+            features_dict, 
+            target_anomalies, 
+            sgiso_env_path=sgiso_env_path_str
+        )
+        # Forza tolerance_val a "exact_sgiso" nei risultati per differenziarlo dai vecchi test
+        tolerance_val = "exact_sgiso"
     elif args.strategy == "infect":
         altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
         

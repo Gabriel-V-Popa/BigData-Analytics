@@ -39,12 +39,14 @@ def main():
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
+    sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
+
     
     out_dir = base_data_path / "custom" / "processed" / "incremental"
     out_dir.mkdir(parents=True, exist_ok=True)
     
     # Creiamo un CSV dedicato in base allo scenario per non sovrascrivere i risultati
-    results_csv_path = Path("results") / f"incremental_matrix_{dataset_name}_{args.scenario}_Enzo.csv"
+    results_csv_path = Path("results") / f"incremental_matrix_{dataset_name}_{args.scenario}_Enzo2.csv"
     results_csv_path.parent.mkdir(parents=True, exist_ok=True)
         
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
@@ -86,6 +88,8 @@ def main():
     if args.scenario == "frequency":
         # Ordina per frequenza decrescente (la più frequente è la prima)
         target_anomalies.sort(key=lambda x: freq_dict.get(x, 0), reverse=True)
+        # Rimuovi gli elementi con GED > 1
+        target_anomalies = [x for x in target_anomalies if features_dict[x]['ged'] <= 1.0]
     elif args.scenario == "ged":
         # Ordina per GED crescente (la più semplice/vicina alla norma è la prima)
         target_anomalies.sort(key=lambda x: features_dict[x]['ged'])
@@ -113,14 +117,11 @@ def main():
         'Fitness': round(base_metrics['fitness'], 4),
         'Precision': round(base_metrics['precision'], 4),
         'Generalization': round(base_metrics['generalization'], 4),
-        'Simplicity': round(base_metrics['simplicity'], 4),
-        'Tolerance': 0
+        'Simplicity': round(base_metrics['simplicity'], 4)
     })
     
     cumulative_traces = 0
     
-    tolerance_val = 0
-
     # Ciclo a cascata
     for i, anom_id in enumerate(target_anomalies, start=1):
         freq = freq_dict.get(anom_id, 0)
@@ -129,7 +130,14 @@ def main():
         print(f"\n--- STEP {i}/{len(target_anomalies)}: Riparazione {anom_id} (Frequenza: {freq}, GED: {ged:.2f}) ---")
         
         # Ripara SOLTANTO l'anomalia corrente sul log GIA' MODIFICATO nei passaggi precedenti
-        current_log, modified_traces = run_repair(current_log, anom_graphs, corr_graphs, features_dict, [anom_id], tolerance = tolerance_val)
+        current_log, modified_traces = run_repair(
+            original_log, 
+            anom_graphs, 
+            corr_graphs, 
+            features_dict, 
+            target_anomalies, 
+            sgiso_env_path=sgiso_env_path_str
+        )
         cumulative_traces += modified_traces
         
         # Salva il log temporaneo per questo specifico step
@@ -148,8 +156,7 @@ def main():
             'Fitness': round(step_metrics['fitness'], 4),
             'Precision': round(step_metrics['precision'], 4),
             'Generalization': round(step_metrics['generalization'], 4),
-            'Simplicity': round(step_metrics['simplicity'], 4),
-            'Tolerance': tolerance_val
+            'Simplicity': round(step_metrics['simplicity'], 4)
         })
         
         # Salva i risultati subito su CSV (così se interrompi lo script a metà non perdi i dati!)
