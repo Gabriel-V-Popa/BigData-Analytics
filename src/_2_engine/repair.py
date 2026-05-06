@@ -132,7 +132,7 @@ def run_repair(log: EventLog,
                target_anomalies: List[str],
                sgiso_env_path: str = "data/fineExp/sgiso_env/") -> EventLog:
     
-    print(f"Starting PYTHON NATIVE REPAIR engine for {len(target_anomalies)} target anomalies...")
+    print(f"Starting PYTHON NATIVE REPAIR engine for {target_anomalies} target anomalies...")
     
     repaired_log = log
     traces_modified = 0

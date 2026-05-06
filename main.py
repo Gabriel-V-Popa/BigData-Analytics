@@ -138,12 +138,14 @@ def main():
             print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
             sys.exit(1)
                 
-        if combined_anomalies is None:
-            combined_anomalies = set(current_anomalies)
-        else:
-            combined_anomalies = combined_anomalies.intersection(set(current_anomalies))
+        ### DA CORREGGEREEEEEE
+    #     if combined_anomalies is None:
+    #         combined_anomalies = set(current_anomalies)
+    #     else:
+    #         combined_anomalies = combined_anomalies.intersection(set(current_anomalies))
 
-    target_anomalies = list(combined_anomalies)
+    # target_anomalies = list(combined_anomalies)
+    
     final_scenario_name = "+".join(args.scenario)
     final_params_string = "+".join(scenario_params_list)
     tolerance_val = config.get('repair_tolerance', 0)
