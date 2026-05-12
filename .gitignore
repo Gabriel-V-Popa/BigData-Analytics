@@ -1,5 +1,6 @@
 # ambienti virtuali
 venv/
+myEnv/
 pm_env/
 .venv/
 

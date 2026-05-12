@@ -142,7 +142,6 @@ def run_repair(log: EventLog,
     
     repaired_log = log
     traces_modified = 0
-    set_anomalies = ""
     print("[INFO] Indicizzazione delle tracce XES in corso...")
     # Puliamo anche i nomi delle tracce XES in caso di spazi fantasma
     trace_index_map = {str(trace.attributes["concept:name"]).strip(): idx for idx, trace in enumerate(repaired_log)}
@@ -344,8 +343,7 @@ def run_repair(log: EventLog,
             print(f"  [INFO] {already_correct} tracce erano già nella forma corretta.")
             
         # Mano a mano che riparo le anomalie le aggiungo ad una lista
-        set_anomalies = (set_anomalies + f"_{anom_id}") if set_anomalies else anom_id
-        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{set_anomalies}.xes"
+        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{anom_id}.xes"
         repaired_log_path.parent.mkdir(parents=True, exist_ok=True)
         pm4py.write_xes(repaired_log, str(repaired_log_path))
         
