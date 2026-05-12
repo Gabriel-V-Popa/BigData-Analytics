@@ -6,7 +6,7 @@
 
 # --- A SCENARIOS: Global & Frequency ---
 # A2_top: How many top-frequent anomalies to select?
-top_k: [10]
+top_k: [32]
 
 # A2_bottom: How many least-frequent anomalies to select?
 bottom_k: [10]

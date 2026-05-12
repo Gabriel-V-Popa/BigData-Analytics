@@ -3,12 +3,18 @@ import pandas as pd
 from pm4py.objects.log.obj import EventLog, Event
 from datetime import timedelta
 from typing import List, Dict, Any
+import pm4py
 
 from src._2_engine.shared import get_label_sequence
+
+from src._4_evaluation.metrics_calculator import evaluate_model
+from src._4_evaluation.results_tracker import update_results_matrix, is_baseline_calculated
 
 import networkx as nx
 from networkx.algorithms import isomorphism as iso
 import os
+from pathlib import Path
+
 
 def parse_graph_from_text(text: str) -> nx.DiGraph:
     """Trasforma il testo di un singolo file .g (traccia) in un grafo NetworkX."""
@@ -136,7 +142,7 @@ def run_repair(log: EventLog,
     
     repaired_log = log
     traces_modified = 0
-
+    set_anomalies = ""
     print("[INFO] Indicizzazione delle tracce XES in corso...")
     # Puliamo anche i nomi delle tracce XES in caso di spazi fantasma
     trace_index_map = {str(trace.attributes["concept:name"]).strip(): idx for idx, trace in enumerate(repaired_log)}
@@ -148,7 +154,10 @@ def run_repair(log: EventLog,
     mapping_path = os.path.join(sgiso_env_path, "traceIdMapping.txt")
     trace_mapping = load_trace_mapping(mapping_path)
     csv_path = os.path.join("data", "fineExp", "fineExp_table2_on_file.csv")
-    
+    base_data_path = Path("data") / "fineExp"
+    pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
+    matrix_path = Path("results") / "new_experiments_matrix.csv"
+    dataset_name = "fineExp"
     
 
     for anom_id in target_anomalies:
@@ -161,6 +170,7 @@ def run_repair(log: EventLog,
         
         print(f"\n[INFO] Riparazione nativa di {anom_id} in corso...")
         print(f"  -> Sequenza anomala che stiamo cercando: {anom_seq}")
+        print(f"  -> Sequenza corretta che stiamo inserendo: {corr_seq}")
         
         infected_traces = get_infected_traces_from_csv(csv_path, anom_id, trace_mapping)
         print(f"  -> Trovate {len(infected_traces)} tracce infette nel CSV mappate all'ID XES.")
@@ -332,6 +342,17 @@ def run_repair(log: EventLog,
             print(f"  [WARNING] In {missed_sequence} tracce le label non combaciavano o non erano consecutive.")
         if already_correct > 0:
             print(f"  [INFO] {already_correct} tracce erano già nella forma corretta.")
+            
+        # Mano a mano che riparo le anomalie le aggiungo ad una lista
+        set_anomalies = (set_anomalies + f"_{anom_id}") if set_anomalies else anom_id
+        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{set_anomalies}.xes"
+        repaired_log_path.parent.mkdir(parents=True, exist_ok=True)
+        pm4py.write_xes(repaired_log, str(repaired_log_path))
+        
+        print(f"\n[!] Evaluating new repaired log for scenario ...")
+        new_metrics = evaluate_model(repaired_log_path, pnml_path)
+        update_results_matrix(matrix_path, dataset_name, 'repair', f'repaired_{anom_id}', local_modified, traces_modified, new_metrics)
+        print("\nExperiment completed successfully!")
 
     print(f"\nRepair complete. Modified {traces_modified} out of {len(repaired_log)} traces.")
     return repaired_log, traces_modified

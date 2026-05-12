@@ -6,4 +6,5 @@ fineExp,REPAIR,A1_con_isomorfismo1,all,5679,0.9288,0.6768,0.9867,0.6279,exact_sg
 fineExp,REPAIR,A2_top_con_isomorfismo,top_1,45,0.9274,0.7787,0.982,0.6279,exact_sgiso
 fineExp,REPAIR,A1_con_isomorfismo2,all,2950,0.9288,0.6777,0.9832,0.6279,exact_sgiso
 fineExp,REPAIR,A1,all,5679,0.9288,0.679,0.9867,0.6279,exact_sgiso
-fineExp,REPAIR,A2_top+B1_exact,top_10+exact_ged_1,5538,0.9288,0.7581,0.9867,0.6279,exact_sgiso
+fineExp,REPAIR,A2_top+B1_exact_1,top_10+exact_ged_1,2811,0.9288,0.7584,0.9818,0.6279,exact_sgiso
+fineExp,REPAIR,A2_top+B1_exact,top_10+exact_ged_1,2811,0.9288,0.7611,0.9818,0.6279,exact_sgiso

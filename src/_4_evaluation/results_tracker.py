@@ -6,10 +6,10 @@ def update_results_matrix(matrix_path: Path,
                           dataset: str, 
                           strategy: str, 
                           scenario: str, 
+                          local_modified: int,
                           modified_traces: int, 
                           metrics: Dict[str, float],
-                          parameters: str = "N/A",
-                          tolerance_val: int = 0) -> pd.DataFrame:
+                          parameters: str = "N/A") -> pd.DataFrame:
     """
     Updates the central CSV matrix with the results of the latest experiment.
     If the file or its parent directories don't exist, it creates them.
@@ -22,12 +22,12 @@ def update_results_matrix(matrix_path: Path,
         'Strategy': strategy.upper(),
         'Scenario': scenario,
         'Parameters': parameters,
-        'Modified_Traces': modified_traces,
+        'Local_Modified_Traces': local_modified,
+        'Total_Modified_Traces': modified_traces,
         'Fitness': round(metrics['fitness'], 4),
         'Precision': round(metrics['precision'], 4),
         'Generalization': round(metrics['generalization'], 4),
-        'Simplicity': round(metrics['simplicity'], 4),
-        'Tolerance': tolerance_val
+        'Simplicity': round(metrics['simplicity'], 4)
     }
     
     # If the file exists, load it. Otherwise, create an empty dataframe.
@@ -41,8 +41,7 @@ def update_results_matrix(matrix_path: Path,
         (df['Dataset'] == dataset) & 
         (df['Strategy'] == strategy.upper()) & 
         (df['Scenario'] == scenario) &
-        (df['Parameters'] == parameters) &
-        (df['Tolerance'] == tolerance_val)
+        (df['Parameters'] == parameters)
     )
     
     if condition.any():

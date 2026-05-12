@@ -49,7 +49,7 @@ def main():
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
     pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
-    matrix_path = Path("results") / "experiments_matrix.csv"
+    matrix_path = Path("results") / "new_experiments_matrix.csv"
     config_path = Path(args.config) if args.config else Path("config") / f"config_fineExp.yaml"
     sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
     
@@ -138,21 +138,28 @@ def main():
             print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
             sys.exit(1)
                 
-        ### DA CORREGGEREEEEEE
-    #     if combined_anomalies is None:
-    #         combined_anomalies = set(current_anomalies)
-    #     else:
-    #         combined_anomalies = combined_anomalies.intersection(set(current_anomalies))
-
-    # target_anomalies = list(combined_anomalies)
+        ### FIX: Manteniamo l'ordine originale di inserimento/frequenza
+        if combined_anomalies is None:
+            # Al primo giro, salviamo la lista ESATTAMENTE nel suo ordine originale
+            combined_anomalies = current_anomalies.copy()
+        else:
+            # Ai giri successivi, facciamo l'intersezione mantenendo l'ordine del primo giro
+            current_set = set(current_anomalies) # Usiamo il set solo per fare la ricerca
+            combined_anomalies = [anom for anom in combined_anomalies if anom in current_set]
+            
+    target_anomalies = combined_anomalies
     
     final_scenario_name = "+".join(args.scenario)
     final_params_string = "+".join(scenario_params_list)
-    tolerance_val = config.get('repair_tolerance', 0)
-
+    
     if not target_anomalies:
         print(f"[WARNING] Combined scenario '{final_scenario_name}' resulted in 0 anomalies. Exiting.")
         sys.exit(0)
+        
+    if args.recalc_baseline or not is_baseline_calculated(matrix_path, dataset_name):
+        print("[INFO] Calculating baseline metrics...")
+        baseline_metrics = evaluate_model(log_path, pnml_path)
+        update_results_matrix(matrix_path, dataset_name, "BASELINE", "original", 0, 0, baseline_metrics)
         
     # ----------------------------------
     # --- PHASE 2: Alteration Engine ---
@@ -167,8 +174,7 @@ def main():
             target_anomalies, 
             sgiso_env_path=sgiso_env_path_str
         )
-        # Forza tolerance_val a "exact_sgiso" nei risultati per differenziarlo dai vecchi test
-        tolerance_val = "exact_sgiso"
+        
     elif args.strategy == "infect":
         altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
         
@@ -176,21 +182,21 @@ def main():
     # --- PHASE 4: Saving ---
     # -----------------------
     # 3. DYNAMIC OUTPUT PATH: Prevent overwriting by including the specific parameters
-    output_path = base_data_path / "custom" / "processed" / f"{dataset_name}_{args.strategy}_{final_scenario_name}_{final_params_string}_{tolerance_val}.xes"
-    if output_path.exists():
-        output_path
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    pm4py.write_xes(altered_log, str(output_path))
+    # output_path = base_data_path / "custom" / "processed" / f"{dataset_name}_{args.strategy}_{final_scenario_name}_{final_params_string}.xes"
+    # if output_path.exists():
+    #     output_path
+    # output_path.parent.mkdir(parents=True, exist_ok=True)
+    # pm4py.write_xes(altered_log, str(output_path))
     
-    if args.recalc_baseline or not is_baseline_calculated(matrix_path, dataset_name):
-        print("[INFO] Calculating baseline metrics...")
-        baseline_metrics = evaluate_model(log_path, pnml_path)
-        update_results_matrix(matrix_path, dataset_name, "BASELINE", "original", 0, baseline_metrics)
+    # if args.recalc_baseline or not is_baseline_calculated(matrix_path, dataset_name):
+    #     print("[INFO] Calculating baseline metrics...")
+    #     baseline_metrics = evaluate_model(log_path, pnml_path)
+    #     update_results_matrix(matrix_path, dataset_name, "BASELINE", "original", 0, baseline_metrics)
         
-    print(f"\n[!] Evaluating new {args.strategy.upper()} log for scenario {final_scenario_name}...")
-    new_metrics = evaluate_model(output_path, pnml_path)
-    update_results_matrix(matrix_path, dataset_name, args.strategy, final_scenario_name, modified_traces, new_metrics, parameters=final_params_string, tolerance_val=tolerance_val)
-    print("\nExperiment completed successfully!")
+    # print(f"\n[!] Evaluating new {args.strategy.upper()} log for scenario {final_scenario_name}...")
+    # new_metrics = evaluate_model(output_path, pnml_path)
+    # update_results_matrix(matrix_path, dataset_name, args.strategy, final_scenario_name, modified_traces, new_metrics, parameters=final_params_string)
+    # print("\nExperiment completed successfully!")
      
 if __name__ == "__main__":
     main()
