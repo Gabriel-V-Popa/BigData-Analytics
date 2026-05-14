@@ -1,0 +1,8 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+sepsis,BASELINE,original,,0,0,0.964,0.4794,0.88,0.6238
+sepsis,REPAIR,repaired_Sub22,,886,886,0.881,0.45,0.8606,0.6238
+sepsis,REPAIR,repaired_Sub14,,81,967,0.8768,0.4489,0.8609,0.6238
+sepsis,REPAIR,repaired_Sub16,,436,1403,0.8778,0.4463,0.8601,0.6238
+sepsis,REPAIR,repaired_Sub9,,138,1541,0.8788,0.4507,0.8597,0.6238
+sepsis,REPAIR,repaired_Sub72,,112,1653,0.8741,0.4541,0.8596,0.6238
+sepsis,REPAIR,repaired_Sub222,N/A,0,1653,0.8741,0.4542,0.8596,0.6238
