@@ -122,13 +122,14 @@ def get_infected_traces_from_csv(csv_path: str, sub_id: str, mapping: Dict[str, 
                 
     return infected_traces
 
-def extract_valid_transitions(log: EventLog) -> set:
-    """Estrae tutte le coppie di eventi adiacenti (Directly-Follows) presenti nel log."""
-    valid_transitions = set()
+def extract_valid_transitions(log: EventLog) -> dict:
+    """Estrae tutte le coppie di eventi adiacenti (Directly-Follows) e ne conta le occorrenze."""
+    valid_transitions = {}
     for trace in log:
         labels = [sanitize_label(event["concept:name"]) for event in trace]
         for i in range(len(labels) - 1):
-            valid_transitions.add((labels[i], labels[i+1]))
+            pair = (labels[i], labels[i+1])
+            valid_transitions[pair] = valid_transitions.get(pair, 0) + 1
     return valid_transitions
 
 def run_repair(log: EventLog, 
@@ -176,7 +177,6 @@ def run_repair(log: EventLog,
         
         missed_mapping = 0
         missed_sequence = 0
-        already_correct = 0
         local_modified = 0
 
         for trace_id, graph_num in infected_traces.items():
@@ -205,7 +205,6 @@ def run_repair(log: EventLog,
             infected_node_ids = find_anomalous_nodes(trace_graph, anom_graph)
             
             if not infected_node_ids:
-                # [Questo risolve il bug dei Falsi Positivi del prof in modo elegante!]
                 continue
             
             # --- INIZIO GRAPH SURGERY ---
@@ -252,24 +251,38 @@ def run_repair(log: EventLog,
 
             # --- FINE GRAPH SURGERY ---
 
-            # 3. APPIATTIMENTO (TOPOLOGICAL SORT) COME CHIESTO DALLA PROF
-            try:
-                # Estraiamo l'ordine sequenziale dal NUOVO grafo corretto
-                new_patch_node_order = list(nx.topological_sort(corr_graph))
-                corr_seq = [corr_graph.nodes[n]['label'].strip() for n in new_patch_node_order]
-            except nx.NetworkXUnfeasible:
-                # Se c'è un ciclo (rarissimo), usiamo la vecchia funzione di sicurezza
+            # 3. ESTRAZIONE DELLA SEQUENZA DALLA TOPPA (GESTIONE BIVI / XOR)
+            possible_sequences = []
+            for s_node in corr_start_nodes:
+                for e_node in corr_end_nodes:
+                    try:
+                        # Troviamo tutti i percorsi possibili che attraversano la toppa
+                        for path in nx.all_simple_paths(corr_graph, s_node, e_node):
+                            possible_sequences.append([corr_graph.nodes[n]['label'].strip() for n in path])
+                    except nx.NodeNotFound:
+                        pass
+                        
+            if not possible_sequences:
+                # Fallback di sicurezza in caso di grafi disconnessi o cicli anomali
                 corr_seq = get_label_sequence(corr_graph)
+            else:
+                # Votazione: Scegliamo il percorso con il punteggio più alto in base alle frequenze nel log originale
+                best_seq = None
+                max_score = -1
+                for seq in possible_sequences:
+                    score = 0
+                    for i in range(len(seq) - 1):
+                        pair = (sanitize_label(seq[i]), sanitize_label(seq[i+1]))
+                        score += valid_transitions.get(pair, 0)
+                    if score > max_score:
+                        max_score = score
+                        best_seq = seq
+                
+                corr_seq = best_seq if best_seq else possible_sequences[0]
             
             trace_labels = [event["concept:name"] for event in trace]
             
-            # 1. CONTROLLO already_correct (DA FARE PRIMA!)
-            # Se ha già la sequenza perfetta, contiamo e saltiamo
-            if find_exact_subsequence(trace_labels, corr_seq) != -1:
-                already_correct += 1
-                continue
-            
-            # 2. CERCHIAMO L'ANOMALIA (Se arriviamo qui, non è already_correct)
+            # 1. CERCHIAMO L'ANOMALIA
             # Cerchiamo l'indice REALE dove applicare la toppa nello XES
             start_idx = find_exact_subsequence(trace_labels, anom_seq)
             if start_idx == -1:
@@ -339,8 +352,6 @@ def run_repair(log: EventLog,
             print(f"  [WARNING] {missed_mapping} ID del CSV non trovati nel file XES.")
         if missed_sequence > 0:
             print(f"  [WARNING] In {missed_sequence} tracce le label non combaciavano o non erano consecutive.")
-        if already_correct > 0:
-            print(f"  [INFO] {already_correct} tracce erano già nella forma corretta.")
             
         # Mano a mano che riparo le anomalie le aggiungo ad una lista
         repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{anom_id}.xes"
