@@ -43,14 +43,14 @@ def main():
     args = parser.parse_args()
 
     dataset_name = args.dataset
-    base_data_path = Path("data") / "fineExp"
+    base_data_path = Path("data") / dataset_name
     log_path = base_data_path / f"{dataset_name}.xes"
-    csv_path = base_data_path / f"fineExp_table2_on_file.csv"
+    csv_path = base_data_path / f"{dataset_name}_table2_on_file.csv"
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
-    pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
-    matrix_path = Path("results") / "new_experiments_matrix.csv"
-    config_path = Path(args.config) if args.config else Path("config") / f"config_fineExp.yaml"
+    pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}.csv"
+    config_path = Path(args.config) if args.config else Path("config") / f"config_{dataset_name}.yaml"
     sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
     
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
@@ -75,12 +75,13 @@ def main():
     anom_graphs = parse_subelements(anom_path, custom_ids=anomaly_ids)
     corr_graphs = parse_subelements(corr_path)
         
-    # Aggiungiamo i 5 grafi mancanti per arrivare a 32
-    anom_graphs = add_manual_sub(anom_graphs, "Sub174", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
-    anom_graphs = add_manual_sub(anom_graphs, "Sub179", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
-    anom_graphs = add_manual_sub(anom_graphs, "Sub176", {1: "AddPenalty", 2: "AppealToPrefecture", 3: "AppealToJudge", 4: "SendAppeal"}, [(1,2), (2,3), (3,4)])
-    anom_graphs = add_manual_sub(anom_graphs, "Sub178", {1: "AddPenalty", 2: "SendAppeal"}, [(1,2)])
-    anom_graphs = add_manual_sub(anom_graphs, "Sub180", {1: "SendAppeal", 2: "AppealToJudge", 3: "AddPenalty"}, [(1,2), (2,3)])
+    if dataset_name == "fineExp":
+        # Aggiungiamo i 5 grafi mancanti per arrivare a 32
+        anom_graphs = add_manual_sub(anom_graphs, "Sub174", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+        anom_graphs = add_manual_sub(anom_graphs, "Sub179", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
+        anom_graphs = add_manual_sub(anom_graphs, "Sub176", {1: "AddPenalty", 2: "AppealToPrefecture", 3: "AppealToJudge", 4: "SendAppeal"}, [(1,2), (2,3), (3,4)])
+        anom_graphs = add_manual_sub(anom_graphs, "Sub178", {1: "AddPenalty", 2: "SendAppeal"}, [(1,2)])
+        anom_graphs = add_manual_sub(anom_graphs, "Sub180", {1: "SendAppeal", 2: "AppealToJudge", 3: "AddPenalty"}, [(1,2), (2,3)])
 
     # 1. CACHING: Prevent GED recalculation on every grid search iteration
     cache_path = base_data_path / "custom" / "features_cache.pkl"
@@ -167,6 +168,7 @@ def main():
     if args.strategy == "repair":
         # [MODIFICATO] Tolto 'tolerance', aggiunto 'sgiso_env_path'
         altered_log, modified_traces = run_repair(
+            dataset_name,
             original_log, 
             anom_graphs, 
             corr_graphs, 

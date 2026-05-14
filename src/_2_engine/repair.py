@@ -131,14 +131,18 @@ def extract_valid_transitions(log: EventLog) -> set:
             valid_transitions.add((labels[i], labels[i+1]))
     return valid_transitions
 
-def run_repair(log: EventLog, 
+def run_repair(
+                dataset_name: str,
+                log: EventLog,
                anomalous_graphs: Dict[str, Any], 
                correct_subgraphs: Dict[str, Any], 
                features_dict: Dict[str, Dict[str, Any]], 
                target_anomalies: List[str],
-               sgiso_env_path: str = "data/fineExp/sgiso_env/") -> EventLog:
+               sgiso_env_path: str
+               ):
     
     print(f"Starting PYTHON NATIVE REPAIR engine for {target_anomalies} target anomalies...")
+    
     
     repaired_log = log
     traces_modified = 0
@@ -152,11 +156,10 @@ def run_repair(log: EventLog,
     
     mapping_path = os.path.join(sgiso_env_path, "traceIdMapping.txt")
     trace_mapping = load_trace_mapping(mapping_path)
-    csv_path = os.path.join("data", "fineExp", "fineExp_table2_on_file.csv")
-    base_data_path = Path("data") / "fineExp"
-    pnml_path = base_data_path / "models_raw" / f"petri_net_fineExp.pnml"
-    matrix_path = Path("results") / "new_experiments_matrix.csv"
-    dataset_name = "fineExp"
+    csv_path = os.path.join("data", f"{dataset_name}", f"{dataset_name}_table2_on_file.csv")
+    base_data_path = Path("data") / f"{dataset_name}"
+    pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}.csv"
     
 
     for anom_id in target_anomalies:

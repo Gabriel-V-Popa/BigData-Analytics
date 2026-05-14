@@ -1,0 +1,8 @@
+v 1 AdmissionIC
+v 2 SUB_1851
+v 3 SUB_1857
+
+e 2 1 AdmissionNC__AdmissionIC
+e 2 3 AdmissionNC__LacticAcid
+e 1 3 AdmissionIC__CRP
+
