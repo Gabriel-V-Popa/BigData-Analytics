@@ -1,0 +1,10 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+fineExp,BASELINE,original,,0,0,0.9274,0.779,0.9516,0.6279
+fineExp,REPAIR,repaired_Sub19,,45,45,0.9274,0.7784,0.982,0.6279
+fineExp,REPAIR,repaired_Sub33,,9,54,0.9274,0.7782,0.982,0.6279
+fineExp,REPAIR,repaired_Sub59,,3,57,0.9274,0.7775,0.982,0.6279
+fineExp,REPAIR,repaired_Sub64,,4,61,0.9274,0.7368,0.982,0.6279
+fineExp,REPAIR,repaired_Sub50,,3,64,0.9274,0.7364,0.9821,0.6279
+fineExp,REPAIR,repaired_Sub80,,0,64,0.9274,0.7364,0.9821,0.6279
+fineExp,REPAIR,repaired_Sub85,,0,64,0.9274,0.7364,0.9821,0.6279
+fineExp,REPAIR,repaired_Sub103,N/A,0,64,0.9274,0.7357,0.9821,0.6279

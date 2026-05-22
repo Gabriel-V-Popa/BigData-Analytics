@@ -61,7 +61,7 @@ def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> lis
     return sorted(list(match.keys()))
 
 def sanitize_label(label: str) -> str:
-    """Rimuove spazi, underscore e converte in minuscolo per un confronto a prova di bomba."""
+    """Rimuove spazi, underscore e converte in minuscolo"""
     return str(label).replace(" ", "").replace("_", "").lower()
 
 def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:

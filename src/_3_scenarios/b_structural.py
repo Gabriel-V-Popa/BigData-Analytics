@@ -94,3 +94,26 @@ def filter_by_position(features_dict: Dict[str, Dict[str, Any]],
             
     print(f"Scenario B.3 ({position_name} Position): Selected {len(selected)} anomalies.")
     return selected
+
+def filter_by_similarity(features_dict: Dict[str, Dict[str, Any]], threshold: float = 0.8) -> List[str]:
+    """
+    Scenario C.1 - Semantic Similarity Threshold.
+    Selects anomalies based on their semantic similarity to the correct subgraph.
+    
+    Args:
+        features_dict (Dict): The dictionary containing all features.
+        threshold (float): Minimum semantic similarity score to consider an anomaly relevant.
+        
+    Returns:
+        List[str]: IDs of anomalies with semantic similarity above the threshold.
+    """
+    selected = []
+    
+    for anom_id, features in features_dict.items():
+        similarity = features.get('semantic_sim', 0)
+        
+        if similarity >= threshold:
+            selected.append(anom_id)
+            
+    print(f"Scenario C.1 (Semantic Similarity): Selected {len(selected)} anomalies with similarity >= {threshold}.")
+    return selected

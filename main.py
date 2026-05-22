@@ -21,7 +21,7 @@ from src._2_engine.infect import run_infect
 
 # --- Imports from PHASE 3 ---
 from src._3_scenarios.a_global_frequency import filter_all_anomalies, filter_top_k_frequent, filter_bottom_k_frequent
-from src._3_scenarios.b_structural import filter_by_ged, filter_by_bottleneck, filter_by_position
+from src._3_scenarios.b_structural import filter_by_ged, filter_by_bottleneck, filter_by_position, filter_by_similarity
 
 # --- Imports from PHASE 4 ---
 from src._4_evaluation.metrics_calculator import evaluate_model
@@ -135,6 +135,9 @@ def main():
         elif current_scenario == "B3_late":
             current_anomalies = filter_by_position(features_dict, anom_graphs, auto_late, "Late")
             scenario_params_list.append(f"late")
+        elif current_scenario == "C1":
+            current_anomalies = filter_by_similarity(features_dict, threshold=config.get('semantic_similarity_threshold', 0.8))
+            scenario_params_list.append(f"similarity_{config.get('semantic_similarity_threshold', 0.8)}")
         else:
             print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
             sys.exit(1)
