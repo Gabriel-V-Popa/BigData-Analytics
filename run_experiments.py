@@ -9,9 +9,7 @@ import sys
 SCENARIO_PARAM_MAP = {
     "A2_top": ["top_k"],
     "A2_bottom": ["bottom_k"],
-    "B1_exact": ["exact_ged"],
-    "B1_extreme_min": ["min_extreme_ged"],
-    "B1_extreme_max": ["max_extreme_ged"],
+    "B1_ged_sort": [],
     "B2_bottleneck": ["top_k_bottlenecks"]
 }
 

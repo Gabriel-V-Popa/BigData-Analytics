@@ -14,6 +14,7 @@ import networkx as nx
 from networkx.algorithms import isomorphism as iso
 import os
 from pathlib import Path
+import random
 
 
 def parse_graph_from_text(text: str) -> nx.DiGraph:
@@ -61,7 +62,7 @@ def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> lis
     return sorted(list(match.keys()))
 
 def sanitize_label(label: str) -> str:
-    """Rimuove spazi, underscore e converte in minuscolo per un confronto a prova di bomba."""
+    """Rimuove spazi, underscore e converte in minuscolo"""
     return str(label).replace(" ", "").replace("_", "").lower()
 
 def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:
@@ -190,12 +191,8 @@ def run_repair(
             trace_idx = trace_index_map[trace_id]
             trace = repaired_log[trace_idx]
             # 1. CARICHIAMO IL GRAFO DELLA TRACCIA
-            # (Assicurati che il path 'graphs/graph{graph_num}.g' combaci con le tue cartelle!)
             graph_path = f"{sgiso_env_path}graphs/graph{graph_num}.g" 
             if not os.path.exists(graph_path):
-                # Fallback nel caso il file si chiami solo "1212.g" invece di "graph1212.g"
-                graph_path = f"graphs/{graph_num}.g"
-                if not os.path.exists(graph_path):
                     continue
             
             with open(graph_path, "r") as f:
@@ -269,23 +266,26 @@ def run_repair(
                 # Fallback di sicurezza in caso di grafi disconnessi o cicli anomali
                 corr_seq = get_label_sequence(corr_graph)
             else:
-                # Votazione: Scegliamo il percorso con il punteggio più alto in base alle frequenze nel log originale
-                best_seq = None
-                max_score = -1
+                # Calcolo dei pesi basato sulle frequenze nel log originale
+                scores = []
                 for seq in possible_sequences:
                     score = 0
                     for i in range(len(seq) - 1):
                         pair = (sanitize_label(seq[i]), sanitize_label(seq[i+1]))
                         score += valid_transitions.get(pair, 0)
-                    if score > max_score:
-                        max_score = score
-                        best_seq = seq
-                
-                corr_seq = best_seq if best_seq else possible_sequences[0]
+                    scores.append(score)
+                    
+                # Se non abbiamo dati storici (tutti 0), usiamo probabilità uniformi
+                if sum(scores) == 0:
+                    weights = [1] * len(possible_sequences)
+                else:
+                    weights = scores
+                    
+                # Estrazione casuale ponderata per mantenere la proporzione dei bivi
+                corr_seq = random.choices(possible_sequences, weights=weights, k=1)[0]
             
             trace_labels = [event["concept:name"] for event in trace]
             
-            # 1. CERCHIAMO L'ANOMALIA
             # Cerchiamo l'indice REALE dove applicare la toppa nello XES
             start_idx = find_exact_subsequence(trace_labels, anom_seq)
             if start_idx == -1:
@@ -294,38 +294,37 @@ def run_repair(
             
             end_idx = start_idx + len(anom_seq) - 1
             
+            # # --- VERIFICA POST-CORREZIONE (LE "CUCITURE") ---
+            # is_valid_patch = True
             
-            
-            # --- VERIFICA POST-CORREZIONE (LE "CUCITURE") ---
-            is_valid_patch = True
-            
-            # Controlla la cucitura IN INGRESSO (se non siamo all'inizio della traccia)
-            if start_idx > 0:
-                pre_event = sanitize_label(trace[start_idx - 1]["concept:name"])
-                first_patch_event = sanitize_label(corr_seq[0])
-                if (pre_event, first_patch_event) not in valid_transitions:
-                    print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni iniziale non valida per la sequenza tra l'evento '{pre_event}' e l'evento '{first_patch_event}'. ")
-                    is_valid_patch = False
+            # # Controlla la cucitura IN INGRESSO (se non siamo all'inizio della traccia)
+            # if start_idx > 0:
+            #     pre_event = sanitize_label(trace[start_idx - 1]["concept:name"])
+            #     first_patch_event = sanitize_label(corr_seq[0])
+            #     if (pre_event, first_patch_event) not in valid_transitions:
+            #         print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni iniziale non valida per la sequenza tra l'evento '{pre_event}' e l'evento '{first_patch_event}'. ")
+            #         is_valid_patch = False
                     
-            # Controlla la cucitura IN USCITA (se non siamo alla fine della traccia)
-            if end_idx < len(trace) - 1:
-                post_event = sanitize_label(trace[end_idx + 1]["concept:name"])
-                last_patch_event = sanitize_label(corr_seq[-1])
-                if (last_patch_event, post_event) not in valid_transitions:
-                    print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni finale non valida per la sequenza tra l'evento '{last_patch_event}' e l'evento '{post_event}'. ")
-                    is_valid_patch = False
+            # # Controlla la cucitura IN USCITA (se non siamo alla fine della traccia)
+            # if end_idx < len(trace) - 1:
+            #     post_event = sanitize_label(trace[end_idx + 1]["concept:name"])
+            #     last_patch_event = sanitize_label(corr_seq[-1])
+            #     if (last_patch_event, post_event) not in valid_transitions:
+            #         print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni finale non valida per la sequenza tra l'evento '{last_patch_event}' e l'evento '{post_event}'. ")
+            #         is_valid_patch = False
                     
-            if not is_valid_patch:
-                # Se le cuciture creano transizioni aliene, skippiamo questa traccia!
-                # print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni di bordo non valide. ")
-                continue
-            # --- FINE VERIFICA ---
+            # if not is_valid_patch:
+            #     # Se le cuciture creano transizioni aliene, skippiamo questa traccia!
+            #     # print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni di bordo non valide. ")
+            #     continue
+            # # --- FINE VERIFICA ---
             
             start_time = trace[start_idx]["time:timestamp"]
             end_time = trace[end_idx]["time:timestamp"]
             
             num_new_events = len(corr_seq)
             time_diff = end_time - start_time
+            # Calcoliamo un intervallo di tempo uniforme per distribuire gli eventi della toppa in modo coerente con la durata originale dell'anomalia
             step = time_diff / max(1, (num_new_events - 1)) if num_new_events > 1 else timedelta(0)
             
             old_events_dict = {sanitize_label(event["concept:name"]): event for event in trace[start_idx : end_idx + 1]}
