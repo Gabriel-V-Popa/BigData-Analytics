@@ -21,7 +21,7 @@ from src._2_engine.infect import run_infect
 
 # --- Imports from PHASE 3 ---
 from src._3_scenarios.a_global_frequency import filter_all_anomalies, filter_top_k_frequent, filter_bottom_k_frequent
-from src._3_scenarios.b_structural import filter_by_ged, filter_by_bottleneck, filter_by_position, filter_by_similarity
+from src._3_scenarios.b_structural import sort_by_ged, filter_by_bottleneck, filter_by_position, sort_by_similarity
 
 # --- Imports from PHASE 4 ---
 from src._4_evaluation.metrics_calculator import evaluate_model
@@ -117,15 +117,9 @@ def main():
         elif current_scenario == "A2_bottom":
             current_anomalies = filter_bottom_k_frequent(features_dict, k=config.get('bottom_k', 5))
             scenario_params_list.append(f"bottom_{config.get('bottom_k', 5)}")
-        elif current_scenario == "B1_exact":
-            current_anomalies = filter_by_ged(features_dict, exact_ged=config.get('exact_ged', 2))
-            scenario_params_list.append(f"exact_ged_{config.get('exact_ged', 2)}")
-        elif current_scenario == "B1_extreme_min":
-            current_anomalies = filter_by_ged(features_dict, min_ged=config.get('min_extreme_ged', 4))
-            scenario_params_list.append(f"min_extreme_{config.get('min_extreme_ged', 4)}")
-        elif current_scenario == "B1_extreme_max":
-            current_anomalies = filter_by_ged(features_dict, max_ged=config.get('max_extreme_ged', 6))
-            scenario_params_list.append(f"max_extreme_{config.get('max_extreme_ged', 6)}")
+        elif current_scenario == "B1_ged_sort":
+            current_anomalies = sort_by_ged(features_dict)
+            scenario_params_list.append("ged_sorted")
         elif current_scenario == "B2_bottleneck":
             current_anomalies = filter_by_bottleneck(features_dict, anom_graphs, auto_bottlenecks)
             scenario_params_list.append(f"bottleneck_top_{config.get('top_k_bottlenecks', 3)}")
@@ -135,9 +129,9 @@ def main():
         elif current_scenario == "B3_late":
             current_anomalies = filter_by_position(features_dict, anom_graphs, auto_late, "Late")
             scenario_params_list.append(f"late")
-        elif current_scenario == "C1":
-            current_anomalies = filter_by_similarity(features_dict, threshold=config.get('semantic_similarity_threshold', 0.8))
-            scenario_params_list.append(f"similarity_{config.get('semantic_similarity_threshold', 0.8)}")
+        elif current_scenario == "C1_similarity_sort":
+            current_anomalies = sort_by_similarity(features_dict)
+            scenario_params_list.append("similarity_sorted")
         else:
             print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
             sys.exit(1)

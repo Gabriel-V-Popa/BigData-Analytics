@@ -1,38 +1,22 @@
 from typing import Dict, List, Any
 import networkx as nx
 
-def filter_by_ged(features_dict: Dict[str, Dict[str, Any]], 
-                  exact_ged: float = None, 
-                  min_ged: float = None, 
-                  max_ged: float = None) -> List[str]:
+def sort_by_ged(features_dict: Dict[str, Dict[str, Any]]) -> List[str]:
     """
-    Scenario B.1 - Anomaly Complexity (GED Thresholds).
-    Filters anomalies based on their Graph Edit Distance (GED) from the correct subgraph.
+    Scenario B.1 - Anomaly Complexity (GED Sorting).
+    Sorts all anomalies based on their Graph Edit Distance (GED) from the correct subgraph,
+    from the lowest GED to the highest.
     
     Args:
         features_dict (Dict): The dictionary containing all features.
-        exact_ged (float, optional): Selects anomalies with this exact GED (e.g., 2).
-        min_ged (float, optional): Minimum GED threshold.
-        max_ged (float, optional): Maximum GED threshold.
         
     Returns:
-        List[str]: A list of anomalous subgraph IDs matching the GED criteria.
+        List[str]: A list of anomalous subgraph IDs sorted by GED (ascending).
     """
-    selected = []
-    
-    for anom_id, features in features_dict.items():
-        ged = features['ged']
-        
-        if exact_ged is not None:
-            if ged == exact_ged:
-                selected.append(anom_id)
-        else:
-            # Check within min and max bounds if provided
-            if (min_ged is None or ged >= min_ged) and (max_ged is None or ged <= max_ged):
-                selected.append(anom_id)
+    sorted_anomalies = sorted(features_dict.keys(), key=lambda x: features_dict[x]['ged'])
                 
-    print(f"Scenario B.1 (GED Filter): Selected {len(selected)} anomalies.")
-    return selected
+    print(f"Scenario B.1 (GED Sort): Sorted {len(sorted_anomalies)} anomalies by GED (Ascending).")
+    return sorted_anomalies
 
 
 def filter_by_bottleneck(features_dict: Dict[str, Dict[str, Any]], 
@@ -95,25 +79,20 @@ def filter_by_position(features_dict: Dict[str, Dict[str, Any]],
     print(f"Scenario B.3 ({position_name} Position): Selected {len(selected)} anomalies.")
     return selected
 
-def filter_by_similarity(features_dict: Dict[str, Dict[str, Any]], threshold: float = 0.8) -> List[str]:
+def sort_by_similarity(features_dict: Dict[str, Dict[str, Any]]) -> List[str]:
     """
-    Scenario C.1 - Semantic Similarity Threshold.
-    Selects anomalies based on their semantic similarity to the correct subgraph.
+    Scenario C.1 - Semantic Similarity Sorting.
+    Sorts all anomalies based on their semantic similarity to the correct subgraph,
+    from the highest similarity (most semantically similar) to the lowest.
     
     Args:
         features_dict (Dict): The dictionary containing all features.
-        threshold (float): Minimum semantic similarity score to consider an anomaly relevant.
         
     Returns:
-        List[str]: IDs of anomalies with semantic similarity above the threshold.
+        List[str]: A list of anomalous subgraph IDs sorted by similarity (descending).
     """
-    selected = []
+    sorted_anomalies = sorted(features_dict.keys(), key=lambda x: features_dict[x].get('similarity', 0.0), reverse=True)
+                
+    print(f"Scenario C.1 (Similarity Sort): Sorted {len(sorted_anomalies)} anomalies by similarity (Descending).")
+    return sorted_anomalies
     
-    for anom_id, features in features_dict.items():
-        similarity = features.get('semantic_sim', 0)
-        
-        if similarity >= threshold:
-            selected.append(anom_id)
-            
-    print(f"Scenario C.1 (Semantic Similarity): Selected {len(selected)} anomalies with similarity >= {threshold}.")
-    return selected
