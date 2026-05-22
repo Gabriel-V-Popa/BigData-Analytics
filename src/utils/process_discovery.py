@@ -3,8 +3,8 @@ import pm4py
 
 # ======== 1️⃣ Input ========
 #log_path = "Sepsis Cases - Event Log_log_con_start_end.xes"
-log_path =r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\sepsis.xes"
-output_folder = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw"
+log_path =r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\custom\processed\sepsis_repair_Sub42.xes"
+output_folder = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw\modelli_post_correzione"
 os.makedirs(output_folder, exist_ok=True)
 
 # ======== 2️⃣ Caricamento log ========
@@ -27,13 +27,13 @@ net, initial_marking, final_marking = pm4py.convert_to_petri_net(ptree)
 print("Petri net generata.")
 
 # ======== 5️⃣ Esportazione PNML ========
-pnml_path = os.path.join(output_folder, "petri_net_sepsisprova.pnml")
+pnml_path = os.path.join(output_folder, "petri_net_sub42.pnml")
 # La sintassi di write_pnml è leggermente cambiata per essere più diretta
 pm4py.write_pnml(net, initial_marking, final_marking, pnml_path)
 print(f"PNML salvato in: {pnml_path}")
 
 # ======== 6️⃣ Esportazione PNG ========
-png_path = os.path.join(output_folder, "petri_net_sepsisprova.png")
+png_path = os.path.join(output_folder, "petri_net_sub42.png")
 print("Salvataggio immagine PNG...")
 # pm4py ora ha una funzione diretta per salvare la visualizzazione
 pm4py.save_vis_petri_net(net, initial_marking, final_marking, png_path)
