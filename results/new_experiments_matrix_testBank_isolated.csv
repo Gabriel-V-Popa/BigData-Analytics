@@ -1,0 +1,2 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+testBank,BASELINE,original,N/A,0,0,0.8512,0.9219,0.9676,0.7576

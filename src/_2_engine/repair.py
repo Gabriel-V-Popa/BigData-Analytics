@@ -15,13 +15,14 @@ from networkx.algorithms import isomorphism as iso
 import os
 from pathlib import Path
 import random
+from copy import deepcopy
 
 
 def parse_graph_from_text(text: str) -> nx.DiGraph:
-    """Trasforma il testo di un singolo file .g (traccia) in un grafo NetworkX."""
+    """Parses a single .g file (trace graph) into a NetworkX DiGraph."""
     G = nx.DiGraph()
     for line in text.splitlines():
-        # Ignora righe vuote o eventuali 'S' rimaste per errore
+        # Ignore empty lines or any remaining 'S' lines by mistake
         if not line.strip() or line.strip() == 'S': 
             continue
             
@@ -32,7 +33,7 @@ def parse_graph_from_text(text: str) -> nx.DiGraph:
         t = parts[0]
         if t == "v":
             idx = int(parts[1])
-            # Preso dalla tua funzione: super sicuro per le label con spazi!
+            # Safely handle labels with spaces
             label = " ".join(parts[2:]) 
             G.add_node(idx, label=label)
         elif t in ("e", "d"):
@@ -44,11 +45,13 @@ def parse_graph_from_text(text: str) -> nx.DiGraph:
 
 def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> list:
     """
-    Esegue l'isomorfismo.
-    Restituisce la lista degli indici dei nodi nel grafo della traccia che compongono l'anomalia.
+    Performs subgraph isomorphism.
+    Returns a list of node indices in the trace graph that make up the anomaly.
     """
-    node_match = iso.categorical_node_match('label', None)
-    # Match flessibile per gli archi (se presenti)
+    # node_match = iso.categorical_node_match('label', None)
+    # Flexible match for nodes using sanitize_label to avoid space/case mismatch issues
+    node_match = lambda n1, n2: sanitize_label(n1.get('label', '')) == sanitize_label(n2.get('label', ''))
+    # Strict match for edges (if labels are present)
     edge_match = iso.categorical_edge_match('label', None)
     
     GM = iso.DiGraphMatcher(trace_graph, anom_graph, node_match=node_match)
@@ -57,16 +60,16 @@ def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> lis
     if not matches:
         return []
         
-    # Prende il primo match trovato. 'match' è un dizionario {nodo_traccia: nodo_anomalia}
+    # Fetch the first match found. 'match' is a dictionary: {trace_node: anomaly_node}
     match = matches[0]
     return sorted(list(match.keys()))
 
 def sanitize_label(label: str) -> str:
-    """Rimuove spazi, underscore e converte in minuscolo"""
+    """Removes spaces, underscores, and converts to lowercase for uniform comparison."""
     return str(label).replace(" ", "").replace("_", "").lower()
 
 def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:
-    """Trova l'indice di partenza sanitizzando le label per aggirare differenze di formattazione."""
+    """Finds the starting index of a subsequence, sanitizing labels to bypass formatting issues."""
     n, m = len(full_list), len(sub_list)
     if m == 0 or n < m:
         return -1
@@ -80,7 +83,7 @@ def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:
     return -1
 
 def load_trace_mapping(mapping_path: str) -> Dict[str, str]:
-    """Legge traceIdMapping.txt gestendo spazi bianchi invisibili."""
+    """Reads traceIdMapping.txt and safely maps graph string indices to trace IDs."""
     mapping = {}
     if not os.path.exists(mapping_path):
         print(f"[ERROR] Mapping file not found at {mapping_path}")
@@ -93,11 +96,11 @@ def load_trace_mapping(mapping_path: str) -> Dict[str, str]:
                 graph_num = parts[0].strip()
                 trace_id = parts[1].strip()
                 mapping[f"graph{graph_num}"] = trace_id
-                mapping[graph_num] = trace_id # Salviamo anche il numero crudo
+                mapping[graph_num] = trace_id
     return mapping
 
 def get_infected_traces_from_csv(csv_path: str, sub_id: str, mapping: Dict[str, str]) -> Dict[str, str]:
-    """Restituisce {ID_XES: Numero_Grafo} (es. {'N95560': '1212'})"""
+    """Returns a dictionary mapping {Trace_ID: Graph_Number} (e.g., {'N95560': '1212'}) from the given CSV."""
     infected_traces = {}
     if not os.path.exists(csv_path):
         return infected_traces
@@ -124,7 +127,7 @@ def get_infected_traces_from_csv(csv_path: str, sub_id: str, mapping: Dict[str, 
     return infected_traces
 
 def extract_valid_transitions(log: EventLog) -> dict:
-    """Estrae tutte le coppie di eventi adiacenti (Directly-Follows) e ne conta le occorrenze."""
+    """Extracts all Directly-Follows adjacent event pairs from the log and counts their occurrences."""
     valid_transitions = {}
     for trace in log:
         labels = [sanitize_label(event["concept:name"]) for event in trace]
@@ -140,31 +143,36 @@ def run_repair(
                correct_subgraphs: Dict[str, Any], 
                features_dict: Dict[str, Dict[str, Any]], 
                target_anomalies: List[str],
-               sgiso_env_path: str
+               sgiso_env_path: str,
+               is_incremental: bool = False
                ):
     
     print(f"Starting PYTHON NATIVE REPAIR engine for {target_anomalies} target anomalies...")
+    print(f"Mode: {'INCREMENTAL' if is_incremental else 'ISOLATED'}")
     
+    print("[INFO] Indexing XES traces...")
+    # Clean XES trace names to ensure safe retrieval, removing invisible spaces
+    trace_index_map = {str(trace.attributes["concept:name"]).strip(): idx for idx, trace in enumerate(log)}
     
-    repaired_log = log
-    traces_modified = 0
-    print("[INFO] Indicizzazione delle tracce XES in corso...")
-    # Puliamo anche i nomi delle tracce XES in caso di spazi fantasma
-    trace_index_map = {str(trace.attributes["concept:name"]).strip(): idx for idx, trace in enumerate(repaired_log)}
-    
-    # NOVITÀ: Calcoliamo il vocabolario delle transizioni lecite
-    print("[INFO] Estrazione del vocabolario delle transizioni (Directly-Follows)...")
-    valid_transitions = extract_valid_transitions(repaired_log)
+    print("[INFO] Extracting process transition vocabulary (Directly-Follows)...")
+    valid_transitions = extract_valid_transitions(log)
     
     mapping_path = os.path.join(sgiso_env_path, "traceIdMapping.txt")
     trace_mapping = load_trace_mapping(mapping_path)
     csv_path = os.path.join("data", f"{dataset_name}", f"{dataset_name}_table2_on_file.csv")
     base_data_path = Path("data") / f"{dataset_name}"
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}.csv"
     
+    mode_tag = "incremental" if is_incremental else "isolated"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
+    
+    working_log = deepcopy(log)
+    cumulative_modified = 0
 
     for anom_id in target_anomalies:
+        if not is_incremental:
+            working_log = deepcopy(log)
+
         if anom_id not in features_dict:
             continue
             
@@ -172,15 +180,17 @@ def run_repair(
         corr_id = features_dict[anom_id]['matched_with']
         corr_seq = get_label_sequence(correct_subgraphs[corr_id])
         
-        print(f"\n[INFO] Riparazione nativa di {anom_id} in corso...")
-        print(f"  -> Sequenza anomala che stiamo cercando: {anom_seq}")
-        print(f"  -> Sequenza corretta che stiamo inserendo: {corr_seq}")
+        print(f"\n[INFO] Native repair processing for {anom_id}...")
+        print(f"  -> Target anomalous sequence: {anom_seq}")
+        print(f"  -> Correct patch sequence:  {corr_seq}")
         
         infected_traces = get_infected_traces_from_csv(csv_path, anom_id, trace_mapping)
-        print(f"  -> Trovate {len(infected_traces)} tracce infette nel CSV mappate all'ID XES.")
+        print(f"  -> Found {len(infected_traces)} infected traces in CSV mapped to XES IDs.")
         
         missed_mapping = 0
         missed_sequence = 0
+        missed_graphs = 0
+        missed_isomorphism = 0
         local_modified = 0
 
         for trace_id, graph_num in infected_traces.items():
@@ -189,11 +199,13 @@ def run_repair(
                 continue
                 
             trace_idx = trace_index_map[trace_id]
-            trace = repaired_log[trace_idx]
-            # 1. CARICHIAMO IL GRAFO DELLA TRACCIA
+            trace = working_log[trace_idx]
+            
+            # 1. TRACE GRAPH LOADING
             graph_path = f"{sgiso_env_path}graphs/graph{graph_num}.g" 
             if not os.path.exists(graph_path):
-                    continue
+                missed_graphs += 1
+                continue
             
             with open(graph_path, "r") as f:
                 trace_graph_text = f.read()
@@ -201,16 +213,17 @@ def run_repair(
             trace_graph = parse_graph_from_text(trace_graph_text)
             anom_graph = anomalous_graphs[anom_id]
             
-            # 2. ISOMORFISMO (Trova i nodi malati nel grafo)
+            # 2. ISOMORPHISM (Identify anomalous nodes within the trace)
             infected_node_ids = find_anomalous_nodes(trace_graph, anom_graph)
             
             if not infected_node_ids:
+                missed_isomorphism += 1
                 continue
             
-            # --- INIZIO GRAPH SURGERY ---
+            # --- GRAPH SURGERY INITIATED ---
             corr_graph = correct_subgraphs[corr_id]
             
-            # A) Trova i nodi "Ponte" (Chi entra nell'anomalia e chi esce)
+            # A) Find border nodes (predecessors entering the anomaly and successors leaving it)
             predecessors = set()
             successors = set()
             for n in infected_node_ids:
@@ -221,16 +234,16 @@ def run_repair(
                     if s not in infected_node_ids:
                         successors.add(s)
 
-            # B) Rimuovi il sottografo infetto dal grafo della traccia
+            # B) Remove the infected subgraph from the trace topology
             trace_graph.remove_nodes_from(infected_node_ids)
 
-            # C) Identifica i nodi di Start ed End del grafo corretto
+            # C) Identify entry and exit points of the newly introduced correct patch
             corr_start_nodes = [n for n in corr_graph.nodes() if corr_graph.in_degree(n) == 0]
             corr_end_nodes = [n for n in corr_graph.nodes() if corr_graph.out_degree(n) == 0]
 
-            # D) Inietta il nuovo grafo (creando ID univoci)
+            # D) Inject the correct graph elements into the trace topology (generating unique node IDs)
             max_id = max(trace_graph.nodes()) if trace_graph.nodes() else 0
-            mapping = {} # Mappa i vecchi ID del corr_graph ai nuovi ID nel trace_graph
+            mapping = {} 
             
             for n, data in corr_graph.nodes(data=True):
                 max_id += 1
@@ -240,7 +253,7 @@ def run_repair(
             for u, v, data in corr_graph.edges(data=True):
                 trace_graph.add_edge(mapping[u], mapping[v], label=data.get('label', ''))
 
-            # E) Ricuciamo gli archi
+            # E) Stitch the remaining graph nodes to the newly injected sub-graph
             for p in predecessors:
                 for s_node in corr_start_nodes:
                     trace_graph.add_edge(p, mapping[s_node])
@@ -249,24 +262,24 @@ def run_repair(
                 for s in successors:
                     trace_graph.add_edge(mapping[e_node], s)
 
-            # --- FINE GRAPH SURGERY ---
+            # --- GRAPH SURGERY COMPLETED ---
 
-            # 3. ESTRAZIONE DELLA SEQUENZA DALLA TOPPA (GESTIONE BIVI / XOR)
+            # 3. SEQUENCE FLATTENING
             possible_sequences = []
             for s_node in corr_start_nodes:
                 for e_node in corr_end_nodes:
                     try:
-                        # Troviamo tutti i percorsi possibili che attraversano la toppa
+                        # Identify all valid traversing paths within the correctly patched area
                         for path in nx.all_simple_paths(corr_graph, s_node, e_node):
                             possible_sequences.append([corr_graph.nodes[n]['label'].strip() for n in path])
                     except nx.NodeNotFound:
                         pass
                         
             if not possible_sequences:
-                # Fallback di sicurezza in caso di grafi disconnessi o cicli anomali
+                # Fallback sequentially in cases of disconnected graphs or cyclic dependencies
                 corr_seq = get_label_sequence(corr_graph)
             else:
-                # Calcolo dei pesi basato sulle frequenze nel log originale
+                # Compute occurrence probabilities based on global Directly-Follows log metrics
                 scores = []
                 for seq in possible_sequences:
                     score = 0
@@ -275,18 +288,18 @@ def run_repair(
                         score += valid_transitions.get(pair, 0)
                     scores.append(score)
                     
-                # Se non abbiamo dati storici (tutti 0), usiamo probabilità uniformi
+                # If no historical metrics support the transition, apply an uniform distribution
                 if sum(scores) == 0:
                     weights = [1] * len(possible_sequences)
                 else:
                     weights = scores
                     
-                # Estrazione casuale ponderata per mantenere la proporzione dei bivi
+                # Apply a weighted random choice to statistically preserve XOR path distributions
                 corr_seq = random.choices(possible_sequences, weights=weights, k=1)[0]
             
             trace_labels = [event["concept:name"] for event in trace]
             
-            # Cerchiamo l'indice REALE dove applicare la toppa nello XES
+            # Seek the exact sequence start index within the physical XES trace
             start_idx = find_exact_subsequence(trace_labels, anom_seq)
             if start_idx == -1:
                 missed_sequence += 1
@@ -294,37 +307,12 @@ def run_repair(
             
             end_idx = start_idx + len(anom_seq) - 1
             
-            # # --- VERIFICA POST-CORREZIONE (LE "CUCITURE") ---
-            # is_valid_patch = True
-            
-            # # Controlla la cucitura IN INGRESSO (se non siamo all'inizio della traccia)
-            # if start_idx > 0:
-            #     pre_event = sanitize_label(trace[start_idx - 1]["concept:name"])
-            #     first_patch_event = sanitize_label(corr_seq[0])
-            #     if (pre_event, first_patch_event) not in valid_transitions:
-            #         print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni iniziale non valida per la sequenza tra l'evento '{pre_event}' e l'evento '{first_patch_event}'. ")
-            #         is_valid_patch = False
-                    
-            # # Controlla la cucitura IN USCITA (se non siamo alla fine della traccia)
-            # if end_idx < len(trace) - 1:
-            #     post_event = sanitize_label(trace[end_idx + 1]["concept:name"])
-            #     last_patch_event = sanitize_label(corr_seq[-1])
-            #     if (last_patch_event, post_event) not in valid_transitions:
-            #         print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni finale non valida per la sequenza tra l'evento '{last_patch_event}' e l'evento '{post_event}'. ")
-            #         is_valid_patch = False
-                    
-            # if not is_valid_patch:
-            #     # Se le cuciture creano transizioni aliene, skippiamo questa traccia!
-            #     # print(f"  [SKIP] Riparazione ignorata per {trace_id}: transizioni di bordo non valide. ")
-            #     continue
-            # # --- FINE VERIFICA ---
-            
             start_time = trace[start_idx]["time:timestamp"]
             end_time = trace[end_idx]["time:timestamp"]
             
             num_new_events = len(corr_seq)
             time_diff = end_time - start_time
-            # Calcoliamo un intervallo di tempo uniforme per distribuire gli eventi della toppa in modo coerente con la durata originale dell'anomalia
+            # Determine a uniform timestamp step to keep events sequentially timed within bounds
             step = time_diff / max(1, (num_new_events - 1)) if num_new_events > 1 else timedelta(0)
             
             old_events_dict = {sanitize_label(event["concept:name"]): event for event in trace[start_idx : end_idx + 1]}
@@ -344,26 +332,34 @@ def run_repair(
             
             trace[start_idx : end_idx + 1] = new_events
                 
-            traces_modified += 1
             local_modified += 1
             
-        # Resoconto dettagliato di fine anomalia
-        if local_modified > 0:
-            print(f"  [SUCCESS] {local_modified} tracce riparate con successo per {anom_id}.")
-        if missed_mapping > 0:
-            print(f"  [WARNING] {missed_mapping} ID del CSV non trovati nel file XES.")
-        if missed_sequence > 0:
-            print(f"  [WARNING] In {missed_sequence} tracce le label non combaciavano o non erano consecutive.")
+        if is_incremental:
+            cumulative_modified += local_modified
             
-        # Mano a mano che riparo le anomalie le aggiungo ad una lista
-        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{anom_id}.xes"
+        # Post-anomaly reporting summary
+        if local_modified > 0:
+            print(f"  [SUCCESS] {local_modified} traces successfully repaired for {anom_id}.")
+        if missed_mapping > 0:
+            print(f"  [WARNING] {missed_mapping} CSV IDs not matched in XES event log.")
+        if missed_sequence > 0:
+            print(f"  [WARNING] {missed_sequence} traces had non-matching or non-contiguous labels in sequence.")
+        if missed_graphs > 0:
+            print(f"  [WARNING] {missed_graphs} .g trace files not found on disk.")
+        if missed_isomorphism > 0:
+            print(f"  [WARNING] {missed_isomorphism} traces failed isomorphism match in the actual NetworkX graph.")
+            
+        # Progressively save newly repaired outputs
+        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{mode_tag}_{anom_id}.xes"
         repaired_log_path.parent.mkdir(parents=True, exist_ok=True)
-        pm4py.write_xes(repaired_log, str(repaired_log_path))
+        pm4py.write_xes(working_log, str(repaired_log_path))
         
-        print(f"\n[!] Evaluating new repaired log for scenario ...")
+        print(f"\n[!] Evaluating newly repaired log for matrix results...")
         new_metrics = evaluate_model(repaired_log_path, pnml_path)
-        update_results_matrix(matrix_path, dataset_name, 'repair', f'repaired_{anom_id}', local_modified, traces_modified, new_metrics)
+        
+        reported_modified = cumulative_modified if is_incremental else local_modified
+        update_results_matrix(matrix_path, dataset_name, 'repair', f'repaired_{mode_tag}_{anom_id}', local_modified, reported_modified, new_metrics)
         print("\nExperiment completed successfully!")
 
-    print(f"\nRepair complete. Modified {traces_modified} out of {len(repaired_log)} traces.")
-    return repaired_log, traces_modified
+    print(f"\nRepair phase completed. Processed {len(target_anomalies)} anomalies in {mode_tag} mode.")
+    return working_log, cumulative_modified

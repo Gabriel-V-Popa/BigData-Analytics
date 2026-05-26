@@ -1,0 +1,12 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+testBank,BASELINE,original,,0,0,0.8512,0.9218,0.9676,0.7576
+testBank,REPAIR,repaired_Sub2,,0,0,0.8512,0.9219,0.9676,0.7576
+testBank,REPAIR,repaired_Sub105,,0,0,0.8512,0.922,0.9676,0.7576
+testBank,REPAIR,repaired_Sub63,,0,0,0.8512,0.9222,0.9676,0.7576
+testBank,REPAIR,repaired_Sub4,,0,0,0.8512,0.9222,0.9676,0.7576
+testBank,REPAIR,repaired_Sub48,,0,0,0.8512,0.922,0.9676,0.7576
+testBank,REPAIR,repaired_Sub17,,0,0,0.8512,0.922,0.9676,0.7576
+testBank,REPAIR,repaired_Sub8,,0,0,0.8512,0.9221,0.9676,0.7576
+testBank,REPAIR,repaired_Sub18,,0,0,0.8512,0.9221,0.9676,0.7576
+testBank,REPAIR,repaired_Sub22,,0,0,0.8512,0.9218,0.9676,0.7576
+testBank,REPAIR,repaired_Sub29,N/A,0,0,0.8512,0.9222,0.9676,0.7576

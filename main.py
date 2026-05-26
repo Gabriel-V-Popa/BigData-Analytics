@@ -37,6 +37,8 @@ def main():
                         help="Scenario code(s) to execute (e.g., A1, A2_top B2_bottleneck).")
     parser.add_argument("--recalc-baseline", action="store_true",
                         help="If set, recalculates baseline metrics before execution.")
+    parser.add_argument("--incremental", action="store_true",
+                        help="If set, repair is incremental (cumulative). If omitted, it evaluates each anomaly in isolation.")
     parser.add_argument("--config", type=str, 
                         help="Optional path to a custom YAML configuration file.")
     
@@ -49,7 +51,8 @@ def main():
     anom_path = base_data_path / "custom" / "anomalous_sub.txt"
     corr_path = base_data_path / "custom" / "correct_sub.txt"
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}.csv"
+    mode_tag = "incremental" if args.incremental else "isolated"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
     config_path = Path(args.config) if args.config else Path("config") / f"config_{dataset_name}.yaml"
     sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
     
@@ -76,14 +79,14 @@ def main():
     corr_graphs = parse_subelements(corr_path)
         
     if dataset_name == "fineExp":
-        # Aggiungiamo i 5 grafi mancanti per arrivare a 32
+        # Add the 5 missing graphs manually for the 'fineExp' dataset
         anom_graphs = add_manual_sub(anom_graphs, "Sub174", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
         anom_graphs = add_manual_sub(anom_graphs, "Sub179", {1: "AddPenalty", 2: "NotifyOffenders", 3: "ReceiveResults"}, [(1,2), (2,3)])
         anom_graphs = add_manual_sub(anom_graphs, "Sub176", {1: "AddPenalty", 2: "AppealToPrefecture", 3: "AppealToJudge", 4: "SendAppeal"}, [(1,2), (2,3), (3,4)])
         anom_graphs = add_manual_sub(anom_graphs, "Sub178", {1: "AddPenalty", 2: "SendAppeal"}, [(1,2)])
         anom_graphs = add_manual_sub(anom_graphs, "Sub180", {1: "SendAppeal", 2: "AppealToJudge", 3: "AddPenalty"}, [(1,2), (2,3)])
 
-    # 1. CACHING: Prevent GED recalculation on every grid search iteration
+    # 1. CACHING: Prevent features recalculation on every grid search iteration
     cache_path = base_data_path / "custom" / "features_cache.pkl"
     if cache_path.exists():
         print("[INFO] Loading pre-calculated GED features from cache...")
@@ -136,16 +139,38 @@ def main():
             print(f"[ERROR] Scenario '{current_scenario}' not implemented or invalid.")
             sys.exit(1)
                 
-        ### FIX: Manteniamo l'ordine originale di inserimento/frequenza
+        # Retain the original insertion/sorting order defined by the primary scenario
         if combined_anomalies is None:
-            # Al primo giro, salviamo la lista ESATTAMENTE nel suo ordine originale
+            # During the first iteration, strictly preserve the original list's order
             combined_anomalies = current_anomalies.copy()
         else:
-            # Ai giri successivi, facciamo l'intersezione mantenendo l'ordine del primo giro
-            current_set = set(current_anomalies) # Usiamo il set solo per fare la ricerca
+            # On subsequent iterations, perform an intersection while maintaining the primary sorting order
+            current_set = set(current_anomalies)
             combined_anomalies = [anom for anom in combined_anomalies if anom in current_set]
             
     target_anomalies = combined_anomalies
+    
+    # --- MULTI-LEVEL TIE-BREAKING SORTING ---
+    # If multiple scenarios are combined, use a tuple to deterministically break ties based on the specified order.
+    if len(args.scenario) > 1:
+        def tie_breaker_key(anom_id):
+            key_tuple = []
+            for scen in args.scenario:
+                if scen == "A2_top":
+                    # Frequency (Descending -> negative values)
+                    key_tuple.append(-freq_dict.get(anom_id, 0))
+                elif scen == "A2_bottom":
+                    # Frequency (Ascending)
+                    key_tuple.append(freq_dict.get(anom_id, 0))
+                elif scen == "B1_ged_sort":
+                    # GED (Ascending)
+                    key_tuple.append(features_dict[anom_id].get('ged', 0))
+                elif scen == "C1_similarity_sort":
+                    # Similarity (Descending -> negative values)
+                    key_tuple.append(-features_dict[anom_id].get('similarity', 0.0))
+            return tuple(key_tuple)
+            
+        target_anomalies.sort(key=tie_breaker_key)
     
     final_scenario_name = "+".join(args.scenario)
     final_params_string = "+".join(scenario_params_list)
@@ -163,7 +188,6 @@ def main():
     # --- PHASE 2: Alteration Engine ---
     # ----------------------------------
     if args.strategy == "repair":
-        # [MODIFICATO] Tolto 'tolerance', aggiunto 'sgiso_env_path'
         altered_log, modified_traces = run_repair(
             dataset_name,
             original_log, 
@@ -171,31 +195,12 @@ def main():
             corr_graphs, 
             features_dict, 
             target_anomalies, 
-            sgiso_env_path=sgiso_env_path_str
+            sgiso_env_path=sgiso_env_path_str,
+            is_incremental=args.incremental
         )
         
     elif args.strategy == "infect":
         altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
-        
-    # -----------------------
-    # --- PHASE 4: Saving ---
-    # -----------------------
-    # 3. DYNAMIC OUTPUT PATH: Prevent overwriting by including the specific parameters
-    # output_path = base_data_path / "custom" / "processed" / f"{dataset_name}_{args.strategy}_{final_scenario_name}_{final_params_string}.xes"
-    # if output_path.exists():
-    #     output_path
-    # output_path.parent.mkdir(parents=True, exist_ok=True)
-    # pm4py.write_xes(altered_log, str(output_path))
-    
-    # if args.recalc_baseline or not is_baseline_calculated(matrix_path, dataset_name):
-    #     print("[INFO] Calculating baseline metrics...")
-    #     baseline_metrics = evaluate_model(log_path, pnml_path)
-    #     update_results_matrix(matrix_path, dataset_name, "BASELINE", "original", 0, baseline_metrics)
-        
-    # print(f"\n[!] Evaluating new {args.strategy.upper()} log for scenario {final_scenario_name}...")
-    # new_metrics = evaluate_model(output_path, pnml_path)
-    # update_results_matrix(matrix_path, dataset_name, args.strategy, final_scenario_name, modified_traces, new_metrics, parameters=final_params_string)
-    # print("\nExperiment completed successfully!")
      
 if __name__ == "__main__":
     main()
