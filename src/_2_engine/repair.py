@@ -1,140 +1,21 @@
 import os
-import pandas as pd
 from pm4py.objects.log.obj import EventLog, Event
 from datetime import timedelta
 from typing import List, Dict, Any
 import pm4py
 
-from src._2_engine.shared import get_label_sequence
+from src._1_baseline.parser import parse_graph_from_text
+
+from src._2_engine.shared import get_label_sequence, sanitize_label, find_anomalous_nodes, find_exact_subsequence, load_trace_mapping, get_infected_traces_from_csv, extract_valid_transitions
 
 from src._4_evaluation.metrics_calculator import evaluate_model
-from src._4_evaluation.results_tracker import update_results_matrix, is_baseline_calculated
+from src._4_evaluation.results_tracker import update_results_matrix
 
 import networkx as nx
-from networkx.algorithms import isomorphism as iso
 import os
 from pathlib import Path
 import random
 from copy import deepcopy
-
-
-def parse_graph_from_text(text: str) -> nx.DiGraph:
-    """Parses a single .g file (trace graph) into a NetworkX DiGraph."""
-    G = nx.DiGraph()
-    for line in text.splitlines():
-        # Ignore empty lines or any remaining 'S' lines by mistake
-        if not line.strip() or line.strip() == 'S': 
-            continue
-            
-        parts = line.split()
-        if len(parts) < 3:
-            continue
-            
-        t = parts[0]
-        if t == "v":
-            idx = int(parts[1])
-            # Safely handle labels with spaces
-            label = " ".join(parts[2:]) 
-            G.add_node(idx, label=label)
-        elif t in ("e", "d"):
-            u, v = int(parts[1]), int(parts[2])
-            label = " ".join(parts[3:]) if len(parts) > 3 else ""
-            G.add_edge(u, v, label=label)
-            
-    return G
-
-def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> list:
-    """
-    Performs subgraph isomorphism.
-    Returns a list of node indices in the trace graph that make up the anomaly.
-    """
-    # node_match = iso.categorical_node_match('label', None)
-    # Flexible match for nodes using sanitize_label to avoid space/case mismatch issues
-    node_match = lambda n1, n2: sanitize_label(n1.get('label', '')) == sanitize_label(n2.get('label', ''))
-    # Strict match for edges (if labels are present)
-    edge_match = iso.categorical_edge_match('label', None)
-    
-    GM = iso.DiGraphMatcher(trace_graph, anom_graph, node_match=node_match)
-    
-    matches = list(GM.subgraph_monomorphisms_iter())
-    if not matches:
-        return []
-        
-    # Fetch the first match found. 'match' is a dictionary: {trace_node: anomaly_node}
-    match = matches[0]
-    return sorted(list(match.keys()))
-
-def sanitize_label(label: str) -> str:
-    """Removes spaces, underscores, and converts to lowercase for uniform comparison."""
-    return str(label).replace(" ", "").replace("_", "").lower()
-
-def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:
-    """Finds the starting index of a subsequence, sanitizing labels to bypass formatting issues."""
-    n, m = len(full_list), len(sub_list)
-    if m == 0 or n < m:
-        return -1
-    
-    sanitized_full = [sanitize_label(x) for x in full_list]
-    sanitized_sub = [sanitize_label(x) for x in sub_list]
-    
-    for i in range(n - m + 1):
-        if sanitized_full[i : i + m] == sanitized_sub:
-            return i
-    return -1
-
-def load_trace_mapping(mapping_path: str) -> Dict[str, str]:
-    """Reads traceIdMapping.txt and safely maps graph string indices to trace IDs."""
-    mapping = {}
-    if not os.path.exists(mapping_path):
-        print(f"[ERROR] Mapping file not found at {mapping_path}")
-        return mapping
-        
-    with open(mapping_path, "r") as f:
-        for line in f:
-            if ";" in line:
-                parts = line.strip().split(";")
-                graph_num = parts[0].strip()
-                trace_id = parts[1].strip()
-                mapping[f"graph{graph_num}"] = trace_id
-                mapping[graph_num] = trace_id
-    return mapping
-
-def get_infected_traces_from_csv(csv_path: str, sub_id: str, mapping: Dict[str, str]) -> Dict[str, str]:
-    """Returns a dictionary mapping {Trace_ID: Graph_Number} (e.g., {'N95560': '1212'}) from the given CSV."""
-    infected_traces = {}
-    if not os.path.exists(csv_path):
-        return infected_traces
-        
-    df = pd.read_csv(csv_path, sep=';', encoding="utf-8-sig")
-    df.columns = [str(col).strip() for col in df.columns]
-    
-    if sub_id not in df.columns:
-        return infected_traces
-        
-    for index, row in df.iterrows():
-        try:
-            val = int(row[sub_id])
-        except ValueError:
-            continue
-            
-        if val == 1:
-            grafo_str = str(row[df.columns[0]])
-            num = ''.join(filter(str.isdigit, grafo_str))
-            
-            if num in mapping:
-                infected_traces[mapping[num]] = num
-                
-    return infected_traces
-
-def extract_valid_transitions(log: EventLog) -> dict:
-    """Extracts all Directly-Follows adjacent event pairs from the log and counts their occurrences."""
-    valid_transitions = {}
-    for trace in log:
-        labels = [sanitize_label(event["concept:name"]) for event in trace]
-        for i in range(len(labels) - 1):
-            pair = (labels[i], labels[i+1])
-            valid_transitions[pair] = valid_transitions.get(pair, 0) + 1
-    return valid_transitions
 
 def run_repair(
                 dataset_name: str,

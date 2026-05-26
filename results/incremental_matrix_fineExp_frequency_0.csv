@@ -1,5 +1,0 @@
-Step,Anomaly_ID,Cumulative_Traces_Modified,Frequency,GED,Fitness,Precision,Generalization,Simplicity
-0,BASELINE,0,-,-,0.9274,0.7724,0.9516,0.6279
-1,Sub19,2772,2772,1.0,0.9259,0.7692,0.9867,0.6279
-2,Sub28,3113,296,2.0,0.9256,0.7694,0.9872,0.6279
-3,Sub58,3129,283,1.0,0.9256,0.7694,0.9872,0.6279

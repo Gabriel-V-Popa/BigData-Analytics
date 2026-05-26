@@ -63,3 +63,28 @@ def add_manual_sub(sub_dict, sub_id, nodes_dict, edges_list) -> Dict[str, nx.DiG
         G.add_edges_from(edges_list)
         sub_dict[sub_id] = G
     return sub_dict
+
+def parse_graph_from_text(text: str) -> nx.DiGraph:
+    """Parses a single .g file (trace graph) into a NetworkX DiGraph."""
+    G = nx.DiGraph()
+    for line in text.splitlines():
+        # Ignore empty lines or any remaining 'S' lines by mistake
+        if not line.strip() or line.strip() == 'S': 
+            continue
+            
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+            
+        t = parts[0]
+        if t == "v":
+            idx = int(parts[1])
+            # Safely handle labels with spaces
+            label = " ".join(parts[2:]) 
+            G.add_node(idx, label=label)
+        elif t in ("e", "d"):
+            u, v = int(parts[1]), int(parts[2])
+            label = " ".join(parts[3:]) if len(parts) > 3 else ""
+            G.add_edge(u, v, label=label)
+            
+    return G

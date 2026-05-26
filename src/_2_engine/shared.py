@@ -1,12 +1,10 @@
 import networkx as nx
 from typing import List
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-
-
-
-sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
-
+from networkx.algorithms import isomorphism as iso
+from pm4py.objects.log.obj import EventLog
+import pandas as pd
+import os
+from typing import Dict
 
 def get_label_sequence(graph: nx.DiGraph) -> List[str]:
     """
@@ -25,114 +23,97 @@ def get_label_sequence(graph: nx.DiGraph) -> List[str]:
         sorted_nodes = sorted(graph.nodes())
     return [graph.nodes[n].get('label', '') for n in sorted_nodes]
 
-def find_subsequence(sequence: List[str], subseq: List[str]) -> int:
+def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> list:
     """
-    Finds the starting index of a contiguous subsequence within a larger sequence.
+    Performs subgraph isomorphism.
+    Returns a list of node indices in the trace graph that make up the anomaly.
+    """
+    # node_match = iso.categorical_node_match('label', None)
+    # Flexible match for nodes using sanitize_label to avoid space/case mismatch issues
+    node_match = lambda n1, n2: sanitize_label(n1.get('label', '')) == sanitize_label(n2.get('label', ''))
+    # Strict match for edges (if labels are present)
+    edge_match = iso.categorical_edge_match('label', None)
     
-    Args:
-        sequence (List[str]): The main list of elements.
-        subseq (List[str]): The subsequence to search for.
+    GM = iso.DiGraphMatcher(trace_graph, anom_graph, node_match=node_match)
+    
+    matches = list(GM.subgraph_monomorphisms_iter())
+    if not matches:
+        return []
         
-    Returns:
-        int: The starting index of the subsequence, or -1 if not found.
-    """
-    n, m = len(sequence), len(subseq)
+    # Fetch the first match found. 'match' is a dictionary: {trace_node: anomaly_node}
+    match = matches[0]
+    return sorted(list(match.keys()))
+
+
+def sanitize_label(label: str) -> str:
+    """Removes spaces, underscores, and converts to lowercase for uniform comparison."""
+    return str(label).replace(" ", "").replace("_", "").lower()
+
+
+def find_exact_subsequence(full_list: List[str], sub_list: List[str]) -> int:
+    """Finds the starting index of a subsequence, sanitizing labels to bypass formatting issues."""
+    n, m = len(full_list), len(sub_list)
+    if m == 0 or n < m:
+        return -1
+    
+    sanitized_full = [sanitize_label(x) for x in full_list]
+    sanitized_sub = [sanitize_label(x) for x in sub_list]
+    
     for i in range(n - m + 1):
-        if sequence[i:i+m] == subseq:
+        if sanitized_full[i : i + m] == sanitized_sub:
             return i
     return -1
 
-# def token_edit_distance(seq1: List[str], seq2: List[str]) -> int:
-#     """
-#     Calcola la distanza di Levenshtein (Edit Distance) tra due sequenze di token (label).
-#     """
-#     m, n = len(seq1), len(seq2)
-#     # Matrice di programmazione dinamica
-#     dp = [[0] * (n + 1) for _ in range(m + 1)]
+def load_trace_mapping(mapping_path: str) -> Dict[str, str]:
+    """Reads traceIdMapping.txt and safely maps graph string indices to trace IDs."""
+    mapping = {}
+    if not os.path.exists(mapping_path):
+        print(f"[ERROR] Mapping file not found at {mapping_path}")
+        return mapping
+        
+    with open(mapping_path, "r") as f:
+        for line in f:
+            if ";" in line:
+                parts = line.strip().split(";")
+                graph_num = parts[0].strip()
+                trace_id = parts[1].strip()
+                mapping[f"graph{graph_num}"] = trace_id
+                mapping[graph_num] = trace_id
+    return mapping
 
-#     for i in range(m + 1):
-#         dp[i][0] = i
-#     for j in range(n + 1):
-#         dp[0][j] = j
-
-#     for i in range(1, m + 1):
-#         for j in range(1, n + 1):
-#             # Se le label sono identiche, costo 0. Altrimenti costo 1 (sostituzione)
-#             cost = 0 if seq1[i - 1] == seq2[j - 1] else 1
+def get_infected_traces_from_csv(csv_path: str, sub_id: str, mapping: Dict[str, str]) -> Dict[str, str]:
+    """Returns a dictionary mapping {Trace_ID: Graph_Number} (e.g., {'N95560': '1212'}) from the given CSV."""
+    infected_traces = {}
+    if not os.path.exists(csv_path):
+        return infected_traces
+        
+    df = pd.read_csv(csv_path, sep=';', encoding="utf-8-sig")
+    df.columns = [str(col).strip() for col in df.columns]
+    
+    if sub_id not in df.columns:
+        return infected_traces
+        
+    for index, row in df.iterrows():
+        try:
+            val = int(row[sub_id])
+        except ValueError:
+            continue
             
-#             dp[i][j] = min(dp[i - 1][j] + 1,        # Cancellazione
-#                            dp[i][j - 1] + 1,        # Inserimento
-#                            dp[i - 1][j - 1] + cost) # Sostituzione
-
-#     return dp[m][n]
-
-def token_hamming_distance(seq1: List[str], seq2: List[str]) -> int:
-    """
-    Calcola la distanza di Hamming (solo sostituzioni) tra due sequenze.
-    Le sequenze devono avere necessariamente la stessa lunghezza.
-    """
-    # 1. Controllo rigoroso sulla lunghezza
-    if len(seq1) != len(seq2):
-        return 5
-
-    # 2. Calcolo dei costi (sostituzioni)
-    costo_totale = 0
-    for token1, token2 in zip(seq1, seq2):
-        if token1 != token2:
-            costo_totale += 1  # Costo 1 per ogni sostituzione necessaria
-
-    return costo_totale
-
-def find_fuzzy_subsequence(trace_labels: List[str], anom_seq: List[str], max_tolerance: int = 1, min_similarity: float = 0.75):
-    """
-    Scansiona la traccia per trovare la porzione più simile all'anomalia,
-    rispettando una tolleranza massima di Edit Distance.
-    
-    Ritorna: (start_idx, end_idx, distance) della migliore corrispondenza,
-             oppure (-1, -1, -1) se nessuna corrispondenza rientra nella tolleranza.
-    """
-    best_dist = float('inf')
-    best_start = -1
-    best_end = -1
-    
-    m = len(anom_seq)
-    if m == 0:
-        return -1, -1, -1
-
-    # Calcoliamo le dimensioni della finestra da testare (da M-tolleranza a M+tolleranza)
-    min_window = max(1, m - max_tolerance)
-    max_window = min(len(trace_labels), m + max_tolerance)
-
-    for window_size in range(min_window, max_window + 1):
-        for i in range(len(trace_labels) - window_size + 1):
-            window = trace_labels[i : i + window_size]
-            dist = token_hamming_distance(window, anom_seq)
-
-            if dist <= max_tolerance:
+        if val == 1:
+            grafo_str = str(row[df.columns[0]])
+            num = ''.join(filter(str.isdigit, grafo_str))
+            
+            if num in mapping:
+                infected_traces[mapping[num]] = num
                 
-                # Calcoliamo SBERT solo su questa finestra molto promettente
-                sim_score = calculate_cosine_similarity(window, anom_seq)
-                
-                # Se supera la soglia semantica ed è il match migliore finora
-                if sim_score >= min_similarity and dist < best_dist:
-                    best_dist = dist
-                    best_start = i
-                    best_end = i + window_size - 1
+    return infected_traces
 
-    return best_start, best_end, best_dist
-
-def calculate_cosine_similarity(seq1: List[str], seq2: List[str]) -> float:
-    """
-    Calcola la similarità semantica tra due sequenze di label trasformandole in testo.
-    """
-    # 1. Trasformiamo le liste di stringhe in frasi singole
-    text1 = " ".join(seq1)
-    text2 = " ".join(seq2)
-    
-    # 2. Calcoliamo gli embedding
-    embedding1 = sbert_model.encode([text1])
-    embedding2 = sbert_model.encode([text2])
-    
-    # 3. Restituiamo il punteggio di similarità (da 0.0 a 1.0)
-    sim_score = cosine_similarity(embedding1, embedding2)[0][0]
-    return sim_score
+def extract_valid_transitions(log: EventLog) -> dict:
+    """Extracts all Directly-Follows adjacent event pairs from the log and counts their occurrences."""
+    valid_transitions = {}
+    for trace in log:
+        labels = [sanitize_label(event["concept:name"]) for event in trace]
+        for i in range(len(labels) - 1):
+            pair = (labels[i], labels[i+1])
+            valid_transitions[pair] = valid_transitions.get(pair, 0) + 1
+    return valid_transitions

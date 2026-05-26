@@ -10,18 +10,17 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # --- Imports from PHASE 1 ---
-from src._1_baseline.bottleneck_extractor import extract_process_metrics
 from src._1_baseline.frequencies_extractor import extract_frequencies
 from src._1_baseline.ged_mapper import get_features
 from src._1_baseline.parser import parse_subelements, add_manual_sub
 
 # --- Imports from PHASE 2 ---
 from src._2_engine.repair import run_repair
-from src._2_engine.infect import run_infect
 
 # --- Imports from PHASE 3 ---
-from src._3_scenarios.a_global_frequency import filter_all_anomalies, filter_top_k_frequent, filter_bottom_k_frequent
-from src._3_scenarios.b_structural import sort_by_ged, filter_by_bottleneck, filter_by_position, sort_by_similarity
+from src._3_scenarios.a_global_frequency import sort_by_frequency
+from src._3_scenarios.b_structural import sort_by_ged
+from src._3_scenarios.c_semantic import sort_by_similarity
 
 # --- Imports from PHASE 4 ---
 from src._4_evaluation.metrics_calculator import evaluate_model
@@ -34,7 +33,7 @@ def main():
     parser.add_argument("--strategy", type=str, required=True, choices=["infect", "repair"],
                         help="Choose whether to inject anomalies ('infect') or fix them ('repair').")
     parser.add_argument("--scenario", type=str, nargs='+', required=True,
-                        help="Scenario code(s) to execute (e.g., A1, A2_top B2_bottleneck).")
+                        help="Scenario code(s) to execute (e.g., frequency_sort ged_sort similarity_sort).")
     parser.add_argument("--recalc-baseline", action="store_true",
                         help="If set, recalculates baseline metrics before execution.")
     parser.add_argument("--incremental", action="store_true",
@@ -98,11 +97,6 @@ def main():
         with open(cache_path, 'wb') as f:
             pickle.dump(features_dict, f)
 
-    # 2. LAZY EVALUATION: Extract bottleneck metrics ONLY if requested by the scenario
-    needs_metrics = any(scen in ["B2_bottleneck", "B3_early", "B3_late"] for scen in args.scenario)
-    if needs_metrics:
-        auto_bottlenecks, auto_early, auto_late = extract_process_metrics(log_path, top_k=config.get('top_k_bottlenecks', 3))
-
     # -----------------------------------
     # --- PHASE 3: Scenario Selection ---
     # -----------------------------------
@@ -111,28 +105,13 @@ def main():
     
     for current_scenario in args.scenario:
         current_anomalies = []
-        if current_scenario == "A1":
-            current_anomalies = filter_all_anomalies(features_dict)
-            scenario_params_list.append("all")
-        elif current_scenario == "A2_top":
-            current_anomalies = filter_top_k_frequent(features_dict, k=config.get('top_k', 5))
-            scenario_params_list.append(f"top_{config.get('top_k', 5)}")
-        elif current_scenario == "A2_bottom":
-            current_anomalies = filter_bottom_k_frequent(features_dict, k=config.get('bottom_k', 5))
-            scenario_params_list.append(f"bottom_{config.get('bottom_k', 5)}")
-        elif current_scenario == "B1_ged_sort":
+        if current_scenario == "frequency_sort":
+            current_anomalies = sort_by_frequency(features_dict, freq_dict)
+            scenario_params_list.append("freq_sorted")
+        elif current_scenario == "ged_sort":
             current_anomalies = sort_by_ged(features_dict)
             scenario_params_list.append("ged_sorted")
-        elif current_scenario == "B2_bottleneck":
-            current_anomalies = filter_by_bottleneck(features_dict, anom_graphs, auto_bottlenecks)
-            scenario_params_list.append(f"bottleneck_top_{config.get('top_k_bottlenecks', 3)}")
-        elif current_scenario == "B3_early":
-            current_anomalies = filter_by_position(features_dict, anom_graphs, auto_early, "Early")
-            scenario_params_list.append(f"early")
-        elif current_scenario == "B3_late":
-            current_anomalies = filter_by_position(features_dict, anom_graphs, auto_late, "Late")
-            scenario_params_list.append(f"late")
-        elif current_scenario == "C1_similarity_sort":
+        elif current_scenario == "similarity_sort":
             current_anomalies = sort_by_similarity(features_dict)
             scenario_params_list.append("similarity_sorted")
         else:
@@ -156,16 +135,13 @@ def main():
         def tie_breaker_key(anom_id):
             key_tuple = []
             for scen in args.scenario:
-                if scen == "A2_top":
+                if scen == "frequency_sort":
                     # Frequency (Descending -> negative values)
                     key_tuple.append(-freq_dict.get(anom_id, 0))
-                elif scen == "A2_bottom":
-                    # Frequency (Ascending)
-                    key_tuple.append(freq_dict.get(anom_id, 0))
-                elif scen == "B1_ged_sort":
+                elif scen == "ged_sort":
                     # GED (Ascending)
                     key_tuple.append(features_dict[anom_id].get('ged', 0))
-                elif scen == "C1_similarity_sort":
+                elif scen == "similarity_sort":
                     # Similarity (Descending -> negative values)
                     key_tuple.append(-features_dict[anom_id].get('similarity', 0.0))
             return tuple(key_tuple)
@@ -198,9 +174,6 @@ def main():
             sgiso_env_path=sgiso_env_path_str,
             is_incremental=args.incremental
         )
-        
-    elif args.strategy == "infect":
-        altered_log, modified_traces = run_infect(original_log, anom_graphs, corr_graphs, features_dict, target_anomalies)
      
 if __name__ == "__main__":
     main()
