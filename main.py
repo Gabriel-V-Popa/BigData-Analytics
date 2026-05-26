@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-import yaml
 import pm4py
 import sys
 import os
@@ -38,8 +37,6 @@ def main():
                         help="If set, recalculates baseline metrics before execution.")
     parser.add_argument("--incremental", action="store_true",
                         help="If set, repair is incremental (cumulative). If omitted, it evaluates each anomaly in isolation.")
-    parser.add_argument("--config", type=str, 
-                        help="Optional path to a custom YAML configuration file.")
     
     args = parser.parse_args()
 
@@ -52,22 +49,14 @@ def main():
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
     mode_tag = "incremental" if args.incremental else "isolated"
     matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
-    config_path = Path(args.config) if args.config else Path("config") / f"config_{dataset_name}.yaml"
     sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
     
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
-                       (corr_path, "Correct TXT"), (config_path, "Config YAML"), (pnml_path, "PNML")]:
+                       (corr_path, "Correct TXT"), (pnml_path, "PNML")]:
         if not path.exists():
             print(f"[ERROR] {name} file not found at {path}")
             sys.exit(1)
     
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-        
-    for key in ['top_k', 'bottom_k', 'top_k_bottlenecks', 'exact_ged', 'min_extreme_ged', 'max_extreme_ged', 'repair_tolerance']:
-        if isinstance(config.get(key), list):
-            config[key] = config[key][0]
-        
     # -----------------------------------
     # --- PHASE 1: Loading & Caching  ---
     # -----------------------------------
