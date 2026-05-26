@@ -88,7 +88,7 @@ def get_features(anomalous_graphs: Dict[str, nx.DiGraph],
         # 3. Store the extracted features
         features_dict[anom_id] = {
             'ged': min_ged,
-            'semantic_sim': sim_score,
+            'similarity': sim_score,
             'freq': freq_dict[anom_id],
             'matched_with': best_match_id,
             'text_anom': text_anom, 
