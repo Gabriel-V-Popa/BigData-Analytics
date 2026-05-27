@@ -20,12 +20,13 @@ from copy import deepcopy
 def run_repair(
                 dataset_name: str,
                 log: EventLog,
-               anomalous_graphs: Dict[str, Any], 
-               correct_subgraphs: Dict[str, Any], 
-               features_dict: Dict[str, Dict[str, Any]], 
+               anomalous_graphs: Dict[str, Any],
+               correct_subgraphs: Dict[str, Any],
+               features_dict: Dict[str, Dict[str, Any]],
                target_anomalies: List[str],
                sgiso_env_path: str,
-               is_incremental: bool = False
+               is_incremental: bool = False,
+               parameters: str = "N/A",
                ):
     
     print(f"Starting PYTHON NATIVE REPAIR engine for {target_anomalies} target anomalies...")
@@ -215,8 +216,7 @@ def run_repair(
                 
             local_modified += 1
             
-        if is_incremental:
-            cumulative_modified += local_modified
+        cumulative_modified += local_modified
             
         # Post-anomaly reporting summary
         if local_modified > 0:
@@ -239,7 +239,7 @@ def run_repair(
         new_metrics = evaluate_model(repaired_log_path, pnml_path)
         
         reported_modified = cumulative_modified if is_incremental else local_modified
-        update_results_matrix(matrix_path, dataset_name, 'repair', f'repaired_{mode_tag}_{anom_id}', local_modified, reported_modified, new_metrics)
+        update_results_matrix(matrix_path, dataset_name, 'repair', f'repaired_{mode_tag}_{anom_id}', local_modified, reported_modified, new_metrics, parameters=parameters)
         print("\nExperiment completed successfully!")
 
     print(f"\nRepair phase completed. Processed {len(target_anomalies)} anomalies in {mode_tag} mode.")

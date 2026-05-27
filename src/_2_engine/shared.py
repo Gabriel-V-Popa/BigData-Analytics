@@ -31,11 +31,9 @@ def find_anomalous_nodes(trace_graph: nx.DiGraph, anom_graph: nx.DiGraph) -> lis
     # node_match = iso.categorical_node_match('label', None)
     # Flexible match for nodes using sanitize_label to avoid space/case mismatch issues
     node_match = lambda n1, n2: sanitize_label(n1.get('label', '')) == sanitize_label(n2.get('label', ''))
-    # Strict match for edges (if labels are present)
-    edge_match = iso.categorical_edge_match('label', None)
-    
+
     GM = iso.DiGraphMatcher(trace_graph, anom_graph, node_match=node_match)
-    
+
     matches = list(GM.subgraph_monomorphisms_iter())
     if not matches:
         return []

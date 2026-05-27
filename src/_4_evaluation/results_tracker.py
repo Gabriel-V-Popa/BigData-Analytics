@@ -33,6 +33,7 @@ def update_results_matrix(matrix_path: Path,
     # If the file exists, load it. Otherwise, create an empty dataframe.
     if matrix_path.exists():
         df = pd.read_csv(matrix_path)
+        df['Parameters'] = df['Parameters'].fillna('N/A').replace('', 'N/A')
     else:
         df = pd.DataFrame(columns=new_row.keys())
         

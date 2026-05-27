@@ -18,3 +18,12 @@ XES/
 *.md
 .claude/
 .clone_kdg_temp/
+
+# log di esecuzione esperimenti
+logs_*.txt
+
+# backup risultati
+results/backup_pre_fixes/
+
+# cache features (rigenerabile)
+data/*/custom/features_cache.pkl
