@@ -1,0 +1,6 @@
+pm4py
+networkx
+pandas
+numpy
+scikit-learn
+sentence-transformers

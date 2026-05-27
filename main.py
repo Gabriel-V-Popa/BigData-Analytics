@@ -122,6 +122,7 @@ def main():
     # If multiple scenarios are combined, use a tuple to deterministically break ties based on the specified order.
     if len(args.scenario) > 1:
         def tie_breaker_key(anom_id):
+            feats = features_dict.get(anom_id, {})
             key_tuple = []
             for scen in args.scenario:
                 if scen == "frequency_sort":
@@ -129,10 +130,10 @@ def main():
                     key_tuple.append(-freq_dict.get(anom_id, 0))
                 elif scen == "ged_sort":
                     # GED (Ascending)
-                    key_tuple.append(features_dict[anom_id].get('ged', 0))
+                    key_tuple.append(feats.get('ged', 0))
                 elif scen == "similarity_sort":
                     # Similarity (Descending -> negative values)
-                    key_tuple.append(-features_dict[anom_id].get('similarity', 0.0))
+                    key_tuple.append(-feats.get('similarity', 0.0))
             return tuple(key_tuple)
             
         target_anomalies.sort(key=tie_breaker_key)
@@ -155,14 +156,18 @@ def main():
     if args.strategy == "repair":
         altered_log, modified_traces = run_repair(
             dataset_name,
-            original_log, 
-            anom_graphs, 
-            corr_graphs, 
-            features_dict, 
-            target_anomalies, 
+            original_log,
+            anom_graphs,
+            corr_graphs,
+            features_dict,
+            target_anomalies,
             sgiso_env_path=sgiso_env_path_str,
-            is_incremental=args.incremental
+            is_incremental=args.incremental,
+            parameters=final_params_string,
         )
+    elif args.strategy == "infect":
+        print("[ERROR] 'infect' strategy is declared in the CLI but not implemented yet.")
+        sys.exit(1)
      
 if __name__ == "__main__":
     main()

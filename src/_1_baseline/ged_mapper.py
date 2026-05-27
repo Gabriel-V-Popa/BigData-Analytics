@@ -71,28 +71,31 @@ def get_features(anomalous_graphs: Dict[str, nx.DiGraph],
                 best_match_G = G_corr
                 
         # Fallback if timeout prevented finding a match
+        timeout_fallback = False
         if best_match_G is None:
             # Just take the first one if everything timed out (rare fallback)
             best_match_id = list(correct_subgraphs.keys())[0]
             best_match_G = correct_subgraphs[best_match_id]
             min_ged = 99.0 # Placeholder for "too complex to calculate"
-                
+            timeout_fallback = True
+            print(f"[WARNING] GED timeout for {anom_id}: arbitrary fallback to {best_match_id}, results may be unreliable.")
+
         # 2. Calculate the semantic similarity with the best structural match
         text_anom = get_graph_text(G_anom)
         text_corr = get_graph_text(best_match_G)
-        
-        embedding_anom = sbert_model.encode([text_anom])
-        embedding_corr = sbert_model.encode([text_corr])
-        sim_score = cosine_similarity(embedding_anom, embedding_corr)[0][0]
-        
+
+        embeddings = sbert_model.encode([text_anom, text_corr])
+        sim_score = cosine_similarity(embeddings[0:1], embeddings[1:2])[0][0]
+
         # 3. Store the extracted features
         features_dict[anom_id] = {
             'ged': min_ged,
             'similarity': sim_score,
             'freq': freq_dict[anom_id],
             'matched_with': best_match_id,
-            'text_anom': text_anom, 
-            'text_corr': text_corr
+            'text_anom': text_anom,
+            'text_corr': text_corr,
+            'timeout_fallback': timeout_fallback,
         }
         
         print(f"{anom_id} completed -> GED: {min_ged:.1f} | Sim: {sim_score:.3f} | Freq: {freq_dict[anom_id]}")

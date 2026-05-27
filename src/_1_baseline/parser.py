@@ -60,8 +60,8 @@ def add_manual_sub(sub_dict, sub_id, nodes_dict, edges_list) -> Dict[str, nx.DiG
     G = nx.DiGraph()
     for nid, lbl in nodes_dict.items():
         G.add_node(nid, label=lbl)
-        G.add_edges_from(edges_list)
-        sub_dict[sub_id] = G
+    G.add_edges_from(edges_list)
+    sub_dict[sub_id] = G
     return sub_dict
 
 def parse_graph_from_text(text: str) -> nx.DiGraph:
