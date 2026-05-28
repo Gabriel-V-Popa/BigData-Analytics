@@ -46,7 +46,7 @@ def run_repair(
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
     
     mode_tag = "incremental" if is_incremental else "isolated"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}_{parameters}.csv"
     
     working_log = deepcopy(log)
     cumulative_modified = 0
