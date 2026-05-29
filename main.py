@@ -37,7 +37,11 @@ def main():
                         help="If set, recalculates baseline metrics before execution.")
     parser.add_argument("--incremental", action="store_true",
                         help="If set, repair is incremental (cumulative). If omitted, it evaluates each anomaly in isolation.")
-    
+    parser.add_argument("--run-tag", type=str, default="",
+                        help="Optional tag to isolate parallel runs: appended to the results CSV and repaired XES filenames "
+                             "so concurrent processes don't overwrite each other. The Scenario column is unaffected, "
+                             "so tagged CSVs can be merged back into the main matrix afterwards.")
+
     args = parser.parse_args()
 
     dataset_name = args.dataset
@@ -48,7 +52,9 @@ def main():
     corr_path = base_data_path / "custom" / "correct_sub.txt"
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
     mode_tag = "incremental" if args.incremental else "isolated"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
+    run_tag = args.run_tag.strip()
+    run_suffix = f"_{run_tag}" if run_tag else ""
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}{run_suffix}.csv"
     sgiso_env_path_str = str(base_data_path / "sgiso_env") + "/"
     
     for path, name in [(log_path, "Log"), (csv_path, "CSV"), (anom_path, "Anomalous TXT"),
@@ -164,6 +170,7 @@ def main():
             sgiso_env_path=sgiso_env_path_str,
             is_incremental=args.incremental,
             parameters=final_params_string,
+            run_tag=run_tag,
         )
     elif args.strategy == "infect":
         print("[ERROR] 'infect' strategy is declared in the CLI but not implemented yet.")

@@ -27,6 +27,7 @@ def run_repair(
                sgiso_env_path: str,
                is_incremental: bool = False,
                parameters: str = "N/A",
+               run_tag: str = "",
                ):
     
     print(f"Starting PYTHON NATIVE REPAIR engine for {target_anomalies} target anomalies...")
@@ -46,7 +47,8 @@ def run_repair(
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
     
     mode_tag = "incremental" if is_incremental else "isolated"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}.csv"
+    run_suffix = f"_{run_tag}" if run_tag else ""
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag}{run_suffix}.csv"
     
     working_log = deepcopy(log)
     cumulative_modified = 0
@@ -231,7 +233,7 @@ def run_repair(
             print(f"  [WARNING] {missed_isomorphism} traces failed isomorphism match in the actual NetworkX graph.")
             
         # Progressively save newly repaired outputs
-        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{mode_tag}_{anom_id}.xes"
+        repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{mode_tag}{run_suffix}_{anom_id}.xes"
         repaired_log_path.parent.mkdir(parents=True, exist_ok=True)
         pm4py.write_xes(working_log, str(repaired_log_path))
         
