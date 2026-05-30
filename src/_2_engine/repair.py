@@ -31,6 +31,7 @@ def run_repair(
     sgiso_env_path: str,
     is_incremental: bool = False,
     parameters: str = "N/A",
+    run_tag: str = "",
 ) -> Tuple[EventLog, int]:
     """
     Executes a native Python graph-based repair on the XES Event Log.
