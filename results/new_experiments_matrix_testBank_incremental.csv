@@ -1,0 +1,7 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+testBank,BASELINE,original,N/A,0,0,0.8512,0.9221,0.9676,0.7576
+testBank,REPAIR,repaired_incremental_Sub2,freq_sorted+ged_sorted+similarity_sorted,473,473,0.8792,0.9222,0.9676,0.7576
+testBank,REPAIR,repaired_incremental_Sub105,freq_sorted+ged_sorted+similarity_sorted,332,805,0.8593,0.9223,0.9677,0.7576
+testBank,REPAIR,repaired_incremental_Sub63,freq_sorted+ged_sorted+similarity_sorted,201,1006,0.8529,0.9229,0.9678,0.7576
+testBank,REPAIR,repaired_incremental_Sub4,freq_sorted+ged_sorted+similarity_sorted,155,1161,0.8572,0.9232,0.9678,0.7576
+testBank,REPAIR,repaired_incremental_Sub48,freq_sorted+ged_sorted+similarity_sorted,132,1293,0.8558,0.9238,0.9678,0.7576

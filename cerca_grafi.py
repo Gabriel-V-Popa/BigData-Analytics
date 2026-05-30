@@ -34,12 +34,12 @@ def cerca_grafi(percorso_csv, sub_id):
 
 if __name__ == "__main__":
     dataset_name = "fineExp"  
-    PERCORSO_CSV = f"c:\Users\Enzo\Documents\UNIVPM\1°Anno\BigData\Progetto\progetto\BigData-Analytics\data\{dataset_name}\{dataset_name}_table2_on_file.csv"
+    PERCORSO_CSV = r"c:\Users\Enzo\Documents\UNIVPM\1°Anno\BigData\Progetto\progetto\BigData-Analytics\data\testBank\testBank_table2_on_file.csv"
     
     # ==================================================
     # CAMBIA QUESTO VALORE PER CERCARE ALTRE ANOMALIE
     # ==================================================
-    sub_da_cercare = "Sub145" 
+    sub_da_cercare = "Sub2" 
     
     print(f"🔍 Ricerca dei grafi per l'anomalia: {sub_da_cercare}...\n")
     cerca_grafi(PERCORSO_CSV, sub_da_cercare)
