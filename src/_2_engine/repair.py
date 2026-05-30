@@ -34,6 +34,17 @@ def run_repair(
 ) -> Tuple[EventLog, int]:
     """
     Executes a native Python graph-based repair on the XES Event Log.
+                dataset_name: str,
+                log: EventLog,
+               anomalous_graphs: Dict[str, Any],
+               correct_subgraphs: Dict[str, Any],
+               features_dict: Dict[str, Dict[str, Any]],
+               target_anomalies: List[str],
+               sgiso_env_path: str,
+               is_incremental: bool = False,
+               parameters: str = "N/A",
+               run_tag: str = "",
+               ):
     
     This engine leverages Subgraph Isomorphism to locate anomalies, performs 
     graph surgery to inject the correct topology, and utilizes Topological Sorting 
@@ -331,6 +342,8 @@ def run_repair(
             
         # Export the progressively repaired log
         repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{mode_tag.lower()}_{anom_id}.xes"
+        # Progressively save newly repaired outputs
+        # repaired_log_path = base_data_path / "custom" / "processed" / f"{dataset_name}_repair_{mode_tag}{run_suffix}_{anom_id}.xes"
         repaired_log_path.parent.mkdir(parents=True, exist_ok=True)
         pm4py.write_xes(working_log, str(repaired_log_path))
         
