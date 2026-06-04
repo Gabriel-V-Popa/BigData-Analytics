@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # ==================================================
     # CAMBIA QUESTO VALORE PER CERCARE ALTRE ANOMALIE
     # ==================================================
-    sub_da_cercare = "Sub2" 
+    sub_da_cercare = "Sub63" 
     
     print(f"🔍 Ricerca dei grafi per l'anomalia: {sub_da_cercare}...\n")
     cerca_grafi(PERCORSO_CSV, sub_da_cercare)
