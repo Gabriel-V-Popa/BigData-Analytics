@@ -9,7 +9,7 @@ __pycache__/
 *.pyc
 notebooks/fineExp/1_clusterings.ipynb
 notebooks/fineExp/1_clusterings_semantic.ipynb
-notebooks/fineExp/sepsis_old.csv
+notebooks/fineExp/*.csv
 # file di sistema
 .DS_Store
 Thumbs.db
