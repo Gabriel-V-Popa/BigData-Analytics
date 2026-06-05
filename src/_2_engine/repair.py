@@ -86,7 +86,7 @@ def run_repair(
     
     base_data_path = Path("data") / dataset_name
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
-    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag.lower()}.csv"
+    matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag.lower()}_{parameters}.csv"
     
     working_log = deepcopy(log)
     cumulative_modified = 0
