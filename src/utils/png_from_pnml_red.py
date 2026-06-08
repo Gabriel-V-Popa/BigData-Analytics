@@ -1,0 +1,54 @@
+from pm4py.objects.petri_net.importer import importer as pnml_importer
+from pm4py.visualization.petri_net import visualizer as pn_visualizer
+
+PNML_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw\modelli_post_correzione\petri_net_sepsis_con_9.pnml"
+net, im, fm = pnml_importer.apply(PNML_FILE)
+print("Label delle transizioni presenti nel file:")
+for t in net.transitions:
+    print(f"-> '{t.label}'")
+# 1. Identificazione nodi target
+nodes = {
+    "start": next(t for t in net.transitions if t.label == "AdmissionNC"),
+    "end": next(t for t in net.transitions if t.label == "Leucocytes")
+   # "end": next(t for t in net.transitions if t.label == "CRP")
+}
+
+# 2. Definizione lista di esclusione
+# Usiamo le etichette per identificarli facilmente
+labels_to_exclude = {"LacticAcid", "ReleaseB", "CRP", "AdmissionIC"}
+nodes_to_exclude = {t for t in net.transitions if t.label in labels_to_exclude}
+
+decorations = {}
+node_style = {"color": "red", "fillcolor": "red", "style": "filled", "fontcolor": "white"}
+edge_style = {"color": "red", "penwidth": "3"}
+
+# 3. Funzione di ricerca con lista di esclusione
+def decorate_path(current_node, target_node, visited):
+    # Se il nodo corrente è tra quelli da escludere, blocchiamo il ramo
+    if current_node in nodes_to_exclude:
+        return False
+        
+    if current_node == target_node:
+        decorations[current_node] = node_style
+        return True
+    
+    visited.add(current_node)
+    
+    for arc in current_node.out_arcs:
+        next_node = arc.target
+        if next_node not in visited:
+            if decorate_path(next_node, target_node, visited):
+                decorations[arc] = edge_style
+                decorations[current_node] = node_style
+                return True
+    return False
+
+# 4. Esecuzione segmentata
+decorate_path(nodes["start"], nodes["end"], set())#
+#decorate_path(nodes["start"], nodes["middle"], set())
+#decorate_path(nodes["middle"], nodes["end"], set())
+
+# 5. Generazione e salvataggio
+gviz = pn_visualizer.apply(net, im, fm, parameters={"decorations": decorations})
+pn_visualizer.save(gviz, "petri_percorso_rosso_esclusioni_multiple.png")
+print("Percorso salvato. AdmissionNC e ReleaseB sono stati esclusi dal tracciato rosso.")
