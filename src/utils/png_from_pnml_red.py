@@ -1,21 +1,22 @@
 from pm4py.objects.petri_net.importer import importer as pnml_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 
-PNML_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw\modelli_post_correzione\petri_net_sepsis_con_9.pnml"
+PNML_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\fineExp\models_raw\modelli_post_correzione\petri_net_fineExp_con5.pnml"
 net, im, fm = pnml_importer.apply(PNML_FILE)
 print("Label delle transizioni presenti nel file:")
 for t in net.transitions:
     print(f"-> '{t.label}'")
 # 1. Identificazione nodi target
 nodes = {
-    "start": next(t for t in net.transitions if t.label == "AdmissionNC"),
-    "end": next(t for t in net.transitions if t.label == "Leucocytes")
+    "start": next(t for t in net.transitions if t.label == "CreateFine"),
+    "middle": next(t for t in net.transitions if  t.label == "AppealToPrefecture"),
+    "end": next(t for t in net.transitions if t.label == "SendAppeal")
    # "end": next(t for t in net.transitions if t.label == "CRP")
 }
 
 # 2. Definizione lista di esclusione
 # Usiamo le etichette per identificarli facilmente
-labels_to_exclude = {"LacticAcid", "ReleaseB", "CRP", "AdmissionIC"}
+labels_to_exclude = {"Notification", "AddPenalty"}
 nodes_to_exclude = {t for t in net.transitions if t.label in labels_to_exclude}
 
 decorations = {}
@@ -44,9 +45,9 @@ def decorate_path(current_node, target_node, visited):
     return False
 
 # 4. Esecuzione segmentata
-decorate_path(nodes["start"], nodes["end"], set())#
-#decorate_path(nodes["start"], nodes["middle"], set())
-#decorate_path(nodes["middle"], nodes["end"], set())
+#decorate_path(nodes["start"], nodes["end"], set())#
+decorate_path(nodes["start"], nodes["middle"], set())
+decorate_path(nodes["middle"], nodes["end"], set())
 
 # 5. Generazione e salvataggio
 gviz = pn_visualizer.apply(net, im, fm, parameters={"decorations": decorations})
