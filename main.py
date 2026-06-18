@@ -4,6 +4,7 @@ import pm4py
 import sys
 import os
 import pickle  # Added for Data Caching
+from pm4py.objects.petri_net.importer import importer as pnml_importer
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -71,6 +72,9 @@ def main():
     anomaly_ids = list(freq_dict.keys())
     anom_graphs = parse_subelements(anom_path, custom_ids=anomaly_ids)
     corr_graphs = parse_subelements(corr_path)
+    
+    net, im, fm = pnml_importer.apply(str(pnml_path))
+
         
     if dataset_name == "fineExp":
         # Add the 5 missing graphs manually for the 'fineExp' dataset
@@ -153,7 +157,7 @@ def main():
         
     if args.recalc_baseline or not is_baseline_calculated(matrix_path, dataset_name):
         print("[INFO] Calculating baseline metrics...")
-        baseline_metrics = evaluate_model(log_path, pnml_path)
+        baseline_metrics = evaluate_model(log_path, net, im, fm)
         update_results_matrix(matrix_path, dataset_name, "BASELINE", "original", 0, 0, baseline_metrics)
         
     # ----------------------------------

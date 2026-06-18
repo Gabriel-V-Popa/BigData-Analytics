@@ -1,4 +1,5 @@
 import os
+import csv
 import random
 from copy import deepcopy
 from datetime import timedelta
@@ -8,6 +9,7 @@ from typing import List, Dict, Any, Tuple
 import networkx as nx
 import pm4py
 from pm4py.objects.log.obj import EventLog, Event
+from pm4py.objects.petri_net.importer import importer as pnml_importer
 
 from src._1_baseline.parser import parse_graph_from_text
 from src._2_engine.shared import (
@@ -18,7 +20,7 @@ from src._2_engine.shared import (
     get_infected_traces_from_csv, 
     extract_valid_transitions
 )
-from src._4_evaluation.metrics_calculator import evaluate_model
+from src._4_evaluation.metrics_calculator import evaluate_model, evaluate_single_trace_fitness
 from src._4_evaluation.results_tracker import update_results_matrix
 
 def run_repair(
@@ -87,6 +89,18 @@ def run_repair(
     base_data_path = Path("data") / dataset_name
     pnml_path = base_data_path / "models_raw" / f"petri_net_{dataset_name}.pnml"
     matrix_path = Path("results") / f"new_experiments_matrix_{dataset_name}_{mode_tag.lower()}_{parameters}.csv"
+    
+    micro_csv_path = Path("results") / f"micro_fitness_evaluation_{dataset_name}_{mode_tag.lower()}.csv"
+    
+    # Se il file non esiste, lo creiamo e scriviamo gli header
+    if not micro_csv_path.exists():
+        micro_csv_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(micro_csv_path, mode='w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Dataset", "Mode", "Anomaly_ID", "Trace_ID", "Fitness_Pre", "Fitness_Post", "Delta", "Outcome"])
+    
+    print("[INFO] Loading Petri Net for micro-evaluation...")
+    net, im, fm = pnml_importer.apply(str(pnml_path))
     
     working_log = deepcopy(log)
     cumulative_modified = 0
@@ -284,6 +298,8 @@ def run_repair(
             start_idx = infected_indices[0]
             end_idx = infected_indices[-1]
             
+            fitness_pre = evaluate_single_trace_fitness(trace, net, im, fm)
+            
             trace_events = list(trace)
             
             # Delete in reverse order to prevent index shifting
@@ -322,6 +338,30 @@ def run_repair(
             for evt in trace_events:
                 trace.append(evt)
                 
+            fitness_post = evaluate_single_trace_fitness(trace, net, im, fm)
+            delta = fitness_post - fitness_pre
+            
+            if delta > 0:
+                outcome = "IMPROVED"
+            elif delta < 0:
+                outcome = "WORSENED"
+            else:
+                outcome = "UNCHANGED"
+            
+            # Scriviamo la riga nel CSV per l'analisi futura
+            with open(micro_csv_path, mode='a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    dataset_name, 
+                    mode_tag, 
+                    anom_id, 
+                    trace_id, 
+                    f"{fitness_pre:.4f}", 
+                    f"{fitness_post:.4f}", 
+                    f"{delta:.4f}", 
+                    outcome
+                ])
+            
             local_modified += 1
             
         # Update accumulators
@@ -349,7 +389,7 @@ def run_repair(
         pm4py.write_xes(working_log, str(repaired_log_path))
         
         print(f"\n[!] Evaluating repaired log for experimental results matrix...")
-        new_metrics = evaluate_model(repaired_log_path, pnml_path)
+        new_metrics = evaluate_model(repaired_log_path, net, im, fm)
         
         reported_modified = cumulative_modified if is_incremental else local_modified
         update_results_matrix(

@@ -4,29 +4,44 @@ from typing import Dict, Union
 
 # pm4py imports
 from pm4py.objects.log.importer.xes import importer as xes_importer
-from pm4py.objects.petri_net.importer import importer as pnml_importer
+from pm4py.objects.log.obj import EventLog
 
 from pm4py.algo.evaluation.replay_fitness import algorithm as fitness_evaluator
 from pm4py.algo.evaluation.generalization import algorithm as generalization_evaluator
 from pm4py.algo.evaluation.simplicity import algorithm as simplicity_evaluator
 
-# Importazione diretta e specifica della variante richiesta per la Precision
 from pm4py.algo.evaluation.precision.variants import automaton_after_align
 
-def evaluate_model(xes_path: Union[str, Path], pnml_path: Union[str, Path], num_runs: int = 5) -> Dict[str, float]:
+def evaluate_single_trace_fitness(trace, net, im, fm) -> float:
+    """
+    Calcola la fitness di una SINGOLA traccia rispetto al modello normativo.
+    Crea un EventLog temporaneo di una traccia per compatibilità con PM4Py.
+    """
+    temp_log = EventLog([trace])
+    
+    try:
+        # Usiamo esattamente lo stesso approccio di evaluate_model
+        fitness_res = fitness_evaluator.apply(
+            temp_log, net, im, fm,
+            variant=fitness_evaluator.Variants.ALIGNMENT_BASED
+        )
+        return float(fitness_res.get("averageFitness", fitness_res.get("log_fitness", 0.0)))
+    except Exception as e:
+        print(f"    [!] PM4Py Error: {e}") 
+        return 0.0
+
+def evaluate_model(xes_path: Union[str, Path], net, im, fm, num_runs: int = 5) -> Dict[str, float]:
     """ 
     Calculates the metrics of Fitness, Precision, Generalization, and Simplicity.
     Precision and Generalization are calculated multiple times and averaged 
     to smooth out non-deterministic variations in alignment-based evaluation.
     """
     xes_path_str = str(xes_path)
-    pnml_path_str = str(pnml_path)
 
     # =========================
     # Data Loading
     # =========================
     log = xes_importer.apply(xes_path_str)
-    net, im, fm = pnml_importer.apply(pnml_path_str)
 
     # =========================
     # Fitness & Simplicity (Deterministiche, calcolate 1 sola volta)
