@@ -3,8 +3,8 @@ from pm4py.objects.petri_net.importer import importer as pnml_importer
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 
 # === CONFIG ===
-PNML_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\testBank\models_raw\testBank.pnml"
-OUTPUT_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\testBank\models_raw\testBank"
+PNML_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw\modelli_post_correzione\petri_con_sub42.pnml"
+OUTPUT_FILE = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\models_raw\modelli_post_correzione\petri_con_sub42"
 
 # Carica la rete di Petri dal file PNML
 net, initial_marking, final_marking = pnml_importer.apply(PNML_FILE)

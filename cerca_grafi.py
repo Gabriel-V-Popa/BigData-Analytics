@@ -34,7 +34,7 @@ def cerca_grafi(percorso_csv, sub_id):
 
 if __name__ == "__main__":
     dataset_name = "fineExp"  
-    PERCORSO_CSV = r"c:\Users\Enzo\Documents\UNIVPM\1°Anno\BigData\Progetto\progetto\BigData-Analytics\data\testBank\testBank_table2_on_file.csv"
+    PERCORSO_CSV = r"C:\Users\gabri\OneDrive\Desktop\Progetti UNIVPM\BigDataProcessMining\data\sepsis\sepsis_table2_on_file.csv"
     
     # ==================================================
     # CAMBIA QUESTO VALORE PER CERCARE ALTRE ANOMALIE
