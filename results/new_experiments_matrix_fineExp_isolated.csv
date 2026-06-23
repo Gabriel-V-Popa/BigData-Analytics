@@ -1,0 +1,2 @@
+Dataset,Strategy,Scenario,Parameters,Local_Modified_Traces,Total_Modified_Traces,Fitness,Precision,Generalization,Simplicity
+fineExp,BASELINE,original,N/A,0,0,0.9957,0.8147,0.9801,0.5833
