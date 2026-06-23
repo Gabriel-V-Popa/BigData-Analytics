@@ -33,5 +33,5 @@ def leggi_corrispondenze(dataset_name):
         
 if __name__ == "__main__":
     # ✏️ CAMBIA IL DATASET QUI SE NECESSARIO (es. "fineExp" o "testBank")
-    DATASET = "fineExp" 
+    DATASET = "sepsis" 
     leggi_corrispondenze(DATASET)
